@@ -22,7 +22,11 @@ def rock(M,t):
     mfO=mf*10000  
     m=mr+mf
     dr=np.zeros(6)
+<<<<<<< HEAD
     r=.0001
+=======
+    r=.001
+>>>>>>> 23a29452b5e5ba569bc22fe08ffdd08127550766
     fIn=r*m
     fOut=fIn
     dr[0]=fIn-fOut
@@ -38,7 +42,11 @@ def rock(M,t):
     
 dinit = 5
 t= np.linspace(0, 1e3, 2000)
+<<<<<<< HEAD
 z = integrate.odeint(rock, [5,-5,1,-5,1], t)
+=======
+z = integrate.odeint(rock, [5,-5,1,-5,10], t)
+>>>>>>> 23a29452b5e5ba569bc22fe08ffdd08127550766
 dR,dF,dRo,dFo,flux = z.T
 
 #fig, ax = plt.subplots()
@@ -50,7 +58,11 @@ dR,dF,dRo,dFo,flux = z.T
 #plt.grid(True)
 #plt.show()
 
+<<<<<<< HEAD
 
+=======
+#%%
+>>>>>>> 23a29452b5e5ba569bc22fe08ffdd08127550766
 t= np.linspace(0, 1, 2)
 iters=int(1e2)
 rockV=np.ones(iters)*5
@@ -86,7 +98,11 @@ def animate(i):
     drS[0]=-5
     drSo[0]=-5.5
     for i in range(1,5+int(np.random.exponential(1)*int(iters/15))):
+<<<<<<< HEAD
         z = integrate.odeint(rock, [rockV[i],drS[i-1],rockVo[i],drSo[i-1],.001], t)
+=======
+        z = integrate.odeint(rock, [rockV[i],drS[i-1],rockVo[i],drSo[i-1],10], t)
+>>>>>>> 23a29452b5e5ba569bc22fe08ffdd08127550766
         dR,dF,dRo,dFo,flux = z.T
         rockV[i]=dR[-1:]
         rockVo[i]=dRo[-1:]
@@ -99,10 +115,17 @@ def animate(i):
     y2= rockVo[1:]
     z = drS[1:]
     z = z[z!=0]
+<<<<<<< HEAD
     zx = range(1,z.size+1)
     z2 = drSo[1:]
     z2 = z2[z2!=0]
     zx2 = range(1,z2.size+1)
+=======
+    zx = range(0,z.size)
+    z2 = drSo[1:]
+    z2 = z2[z2!=0]
+    zx2 = range(0,z2.size)
+>>>>>>> 23a29452b5e5ba569bc22fe08ffdd08127550766
     #y = drS[1:]
     line.set_data(y,x)
     line2.set_data(z,zx)
@@ -114,6 +137,15 @@ def animate(i):
 anim = animation.FuncAnimation(fig, animate, init_func=init,
                                frames=50, interval=1, blit=True, repeat_delay=10)
 
+<<<<<<< HEAD
+=======
+# save the animation as an mp4.  This requires ffmpeg or mencoder to be
+# installed.  The extra_args ensure that the x264 codec is used, so that
+# the video can be embedded in html5.  You may need to adjust this for
+# your system: for more information, see
+# http://matplotlib.sourceforge.net/api/animation_api.html
+#anim.save('basic_animation.mp4', fps=3)
+>>>>>>> 23a29452b5e5ba569bc22fe08ffdd08127550766
 
 plt.show()
 
@@ -152,5 +184,8 @@ img2 = plt.imshow(zvals,interpolation='nearest',
                     origin='lower')
 plt.colorbar(img2,cmap=cmap2)
 plt.show()
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 23a29452b5e5ba569bc22fe08ffdd08127550766
