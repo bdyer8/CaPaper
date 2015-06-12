@@ -77,8 +77,14 @@ u,v = np.ones([2,gridX,gridY])
 #v=load('v.npy')
 #u[0:2,:]=0
 #v[0:2,:]=0
-u=load('uNew2.npy')
-v=load('vNew2.npy')
+#u=load('uNew2.npy')
+#u[np.abs(u)<.001]=0
+#v=load('vNew2.npy')
+#v[np.abs(v)<.001]=0
+u=load('uNew3.npy')
+u[np.abs(u)<.001]=0
+v=load('vNew3.npy')
+v[np.abs(v)<.001]=0
 x=linspace(0,gridX-1,gridX)
 X,Y=meshgrid(x,x)
 u=np.array(list(reversed(u)))
@@ -128,8 +134,8 @@ def updatefig(frame):
     for k in range(gridX-2,1,-1):  #k is y and i is x, v is y and u is x, positive right and down
         for i in range(gridX-2,1,-1): #we must loop through the whole matrix and gather the fluids from 4 directions             
             F=[0,0,0]
-            b[0:5,20:80]=-5 #fluid boundary conditions
-            d[0:5,20:80]=-6
+            b[23:27,47:53]=-5 #fluid boundary conditions
+            d[23:27,47:53]=-6
 #            b[0:40,-3:-1]=-5
 #            d[0:40,-3:-1]=-6
             
@@ -182,5 +188,5 @@ def updatefig(frame):
 ani = animation.FuncAnimation(fig, updatefig, frames=250)
 
 FFwriter = animation.FFMpegWriter()
-ani.save('fluidFlowNewTest.mp4', writer = FFwriter, fps=30, extra_args=['-vcodec', 'libx264'])
+ani.save('fluidFlowConservative.mp4', writer = FFwriter, fps=30, extra_args=['-vcodec', 'libx264'])
 #plt.show()
