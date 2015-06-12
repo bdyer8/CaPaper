@@ -81,16 +81,16 @@ u,v = np.ones([2,gridX,gridY])
 #u[np.abs(u)<.001]=0
 #v=load('vNew2.npy')
 #v[np.abs(v)<.001]=0
-u=load('uNew3.npy')
+u=load('uNew4.npy')
 u[np.abs(u)<.001]=0
-v=load('vNew3.npy')
+v=load('vNew4.npy')
 v[np.abs(v)<.001]=0
 x=linspace(0,gridX-1,gridX)
 X,Y=meshgrid(x,x)
 u=np.array(list(reversed(u)))
 v=np.array(list(reversed(v)))
 #qui = axarr[0].quiver(X[:-1-3,0:7],Y[:-1-3,0:7],u[3:,3:10],v[3:,3:10])
-qui = axarr0.quiver(X,Y,u,v)
+qui = axarr0.quiver(X[::3],Y[::3],u[::3],v[::3])
 axarr0.plot(15*np.ones(c[3:,25].size),np.linspace(0,100,c[3:,5].size), lw=2)
 axarr0.plot(40*np.ones(c[3:,25].size),np.linspace(0,100,c[3:,5].size), lw=2)
 #axarr[0].plot(5*np.ones(c[3:,5].size),np.linspace(0,16,c[3:,5].size), lw=2)
@@ -134,10 +134,10 @@ def updatefig(frame):
     for k in range(gridX-2,1,-1):  #k is y and i is x, v is y and u is x, positive right and down
         for i in range(gridX-2,1,-1): #we must loop through the whole matrix and gather the fluids from 4 directions             
             F=[0,0,0]
-            b[23:27,47:53]=-5 #fluid boundary conditions
-            d[23:27,47:53]=-6
-#            b[0:40,-3:-1]=-5
-#            d[0:40,-3:-1]=-6
+#            b[23:27,47:53]=-5 #fluid boundary conditions
+#            d[23:27,47:53]=-6
+            b[0:40,-3:-1]=-5
+            d[0:40,-3:-1]=-6
             
             xFlux=np.array(u[k,i]) 
             if xFlux>0:
@@ -188,5 +188,5 @@ def updatefig(frame):
 ani = animation.FuncAnimation(fig, updatefig, frames=250)
 
 FFwriter = animation.FFMpegWriter()
-ani.save('fluidFlowConservative.mp4', writer = FFwriter, fps=30, extra_args=['-vcodec', 'libx264'])
+ani.save('fluidFlowHalfBlock.mp4', writer = FFwriter, fps=30, extra_args=['-vcodec', 'libx264'])
 #plt.show()
