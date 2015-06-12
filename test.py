@@ -1,34 +1,23 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
+from matplotlib import pyplot as plt
+from matplotlib import animation
+#plt.rcParams['animation.ffmpeg_path'] = '/usr/local/Cellar/ffmpeg/2.6.3/'
 
-def update_line(num, data, line):
-    line.set_data(data[...,:num])
+fig = plt.figure()
+ax = plt.axes(xlim=(0, 2), ylim=(-2, 2))
+line, = ax.plot([], [], lw=2)
+
+def init():
+    line.set_data([], [])
     return line,
 
-fig1 = plt.figure()
+def animate(i):
+    x = np.linspace(0, 2, 1000)
+    y = np.sin(2 * np.pi * (x - 0.01 * i))
+    line.set_data(x, y)
+    return line,
 
-data = np.random.rand(2, 25)
-l, = plt.plot([], [], 'r-')
-plt.xlim(0, 1)
-plt.ylim(0, 1)
-plt.xlabel('x')
-plt.title('test')
-line_ani = animation.FuncAnimation(fig1, update_line, 25, fargs=(data, l),
-    interval=50, blit=True)
-#line_ani.save('lines.mp4')
+anim = animation.FuncAnimation(fig, animate, init_func=init, frames=200, interval=20, blit=True)
 
-fig2 = plt.figure()
-
-x = np.arange(-9, 10)
-y = np.arange(-9, 10).reshape(-1, 1)
-base = np.hypot(x, y)
-ims = []
-for add in np.arange(15):
-    ims.append((plt.pcolor(x, y, base + add, norm=plt.Normalize(0, 30)),))
-
-im_ani = animation.ArtistAnimation(fig2, ims, interval=50, repeat_delay=3000,
-    blit=True)
-#im_ani.save('im.mp4', metadata={'artist':'Guido'})
-
-plt.show()
+FFwriter = animation.FFMpegWriter()
+anim.save('basic_animation.mp4', writer = FFwriter, fps=30, extra_args=['-vcodec', 'libx264'])
