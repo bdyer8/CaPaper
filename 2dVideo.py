@@ -53,13 +53,13 @@ gridY = 100
 #fig, axarr = plt.subplots(1,2)
 
 fig = plt.figure(figsize=(15, 12)) 
-gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1]) 
+gs = gridspec.GridSpec(1, 2, width_ratios=[4, 1]) 
 axarr0 = plt.subplot(gs[0])
 axarr1 = plt.subplot(gs[1])
 a,b,c,d,e = np.zeros([5,gridX,gridY])
 a,b=np.ones([2,gridX,gridY])*5
 c,d=np.ones([2,gridX,gridY])*1
-im = axarr0.imshow(a, cmap=plt.get_cmap('coolwarm'), vmin=-5, vmax=5)
+im = axarr0.imshow(a, cmap=plt.get_cmap('jet'), vmin=-5, vmax=5)
 axarr1.set_xlim([-7, 6])
 axarr1.set_ylim([5, 95])
 axarr0.set_xlim([0, 100])
@@ -81,23 +81,25 @@ u,v = np.ones([2,gridX,gridY])
 #u[np.abs(u)<.001]=0
 #v=load('vNew2.npy')
 #v[np.abs(v)<.001]=0
-u=load('uNew4.npy')
-u[np.abs(u)<.001]=0
-v=load('vNew4.npy')
-v[np.abs(v)<.001]=0
+u=load('uLens2.npy')
+#u[np.abs(u)<.001]=0
+v=load('vLens2.npy')
+#v[np.abs(v)<.001]=0
 x=linspace(0,gridX-1,gridX)
 X,Y=meshgrid(x,x)
 u=np.array(list(reversed(u)))
 v=np.array(list(reversed(v)))
 #qui = axarr[0].quiver(X[:-1-3,0:7],Y[:-1-3,0:7],u[3:,3:10],v[3:,3:10])
-qui = axarr0.quiver(X[::3],Y[::3],u[::3],v[::3])
+qui = axarr0.quiver(X,Y,u,v)
+axarr0.plot(3*np.ones(c[3:,25].size),np.linspace(0,100,c[3:,5].size), lw=2)
 axarr0.plot(15*np.ones(c[3:,25].size),np.linspace(0,100,c[3:,5].size), lw=2)
-axarr0.plot(40*np.ones(c[3:,25].size),np.linspace(0,100,c[3:,5].size), lw=2)
+axarr0.plot(25*np.ones(c[3:,25].size),np.linspace(0,100,c[3:,5].size), lw=2)
+axarr0.plot(47*np.ones(c[3:,25].size),np.linspace(0,100,c[3:,5].size), lw=2)
 #axarr[0].plot(5*np.ones(c[3:,5].size),np.linspace(0,16,c[3:,5].size), lw=2)
 #v=np.abs(v)
 #u=np.abs(u)
-u=u*50
-v=v*50
+u=u*65
+v=v*65
 #u[:,:]=0
 axarr1.set_ylabel('meters')
 axarr1.set_xlabel('$\delta$ value')
@@ -136,8 +138,8 @@ def updatefig(frame):
             F=[0,0,0]
 #            b[23:27,47:53]=-5 #fluid boundary conditions
 #            d[23:27,47:53]=-6
-            b[0:40,-3:-1]=-5
-            d[0:40,-3:-1]=-6
+            b[0:5,5:-5]=-5
+            d[0:5,5:-5]=-6
             
             xFlux=np.array(u[k,i]) 
             if xFlux>0:
@@ -179,14 +181,14 @@ def updatefig(frame):
     c2=c[3:,3:10]
     c2=c
     im.set_array(a2)
-    line.set_data(np.array(a2[:,15]),np.array(list(reversed(range(0,a2[:,4].size)))))
-    line2.set_data(np.array(c2[:,15]),np.array(list(reversed(range(0,c2[:,4].size)))))
-    line3.set_data(np.array(a2[:,40]),np.array(list(reversed(range(0,a2[:,4].size)))))
-    line4.set_data(np.array(c2[:,40]),np.array(list(reversed(range(0,c2[:,4].size)))))
+    line.set_data(np.array(a2[:,3]),np.array(list(reversed(range(0,a2[:,4].size)))))
+    line2.set_data(np.array(a2[:,15]),np.array(list(reversed(range(0,c2[:,4].size)))))
+    line3.set_data(np.array(a2[:,25]),np.array(list(reversed(range(0,a2[:,4].size)))))
+    line4.set_data(np.array(a2[:,47]),np.array(list(reversed(range(0,c2[:,4].size)))))
     return im, line, line2, line3, line4
 
 ani = animation.FuncAnimation(fig, updatefig, frames=250)
 
 FFwriter = animation.FFMpegWriter()
-ani.save('fluidFlowHalfBlock.mp4', writer = FFwriter, fps=30, extra_args=['-vcodec', 'libx264'])
+ani.save('fluidFlowCarboniferous3.mp4', writer = FFwriter, fps=30, extra_args=['-vcodec', 'libx264'])
 #plt.show()
