@@ -148,9 +148,9 @@ class meshRock:
             crossPlotCO.set_ylim([carbonAxes[0], carbonAxes[1]])   
             crossPlotCO.set_ylabel('$\delta$13C Rock', labelpad=-8)
             crossPlotCO.set_xlabel('$\delta$18O Rock', labelpad=0)
-            crossRockCO4 = crossPlotCO.scatter(rockOxygen[:,:49],rockCarbon[:,:49],color=plt.rcParams['axes.color_cycle'][5], s=10, alpha=.7)            
-            crossRockCO3 = crossPlotCO.scatter(rockOxygen[:,50:100],rockCarbon[:,50:100],color=plt.rcParams['axes.color_cycle'][4], s=10, alpha=.7)
-            crossRockCO2 = crossPlotCO.scatter(rockOxygen[:,100:250],rockCarbon[:,100:250],color=plt.rcParams['axes.color_cycle'][1], s=1, alpha=.3)
+            crossRockCO4 = crossPlotCO.scatter(rockOxygen[:,49],rockCarbon[:,49],color=plt.rcParams['axes.color_cycle'][6], s=15, alpha=.8)            
+            crossRockCO3 = crossPlotCO.scatter(rockOxygen[:,100],rockCarbon[:,100],color=plt.rcParams['axes.color_cycle'][4], s=15, alpha=.8)
+            crossRockCO2 = crossPlotCO.scatter(rockOxygen[:,:250],rockCarbon[:,:250],color=plt.rcParams['axes.color_cycle'][1], s=1, alpha=.3)
             
             crossPlotCCa.set_xlim([calciumAxes[0], calciumAxes[1]])
             crossPlotCCa.set_ylim([carbonAxes[0], carbonAxes[1]])
