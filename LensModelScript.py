@@ -31,12 +31,12 @@ def aniStep(step):
     mesh.compPlotAni(fig)
 
 
-fig = plt.figure(figsize=(20, 16))
-ani = animation.FuncAnimation(fig, aniStep, frames=1000)
-FFwriter = animation.FFMpegWriter()
-ani.save('compPlot_1000_fixedA_fixedR.mp4', dpi=150, writer = FFwriter, fps=30, extra_args=['-vcodec', 'libx264'])
-
-
+#fig = plt.figure(figsize=(20, 16))
+#ani = animation.FuncAnimation(fig, aniStep, frames=1000)
+#FFwriter = animation.FFMpegWriter()
+#ani.save('compPlot_1000_fixedA_fixedR.mp4', dpi=150, writer = FFwriter, fps=30, extra_args=['-vcodec', 'libx264'])
+#
+mesh.inject(1)
 
 #
 #fig = plt.figure(figsize=(20, 16))
