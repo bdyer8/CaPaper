@@ -17,13 +17,15 @@ from matplotlib import gridspec
 import pickle
 from matplotlib import rcParams
 import pandas as pd
-        
+
+reload(DiagenesisMesh)
+     
 meshX=500
 meshY=80
 u=load('uWideLens2.npy')
 v=load('vWideLens2.npy')
-u=u*8.0
-v=v*8.0
+u=u[:,:]*8.0
+v=v[:,:]*8.0
 mesh=DiagenesisMesh.meshRock(meshX,meshY,np.array(list(reversed(u))),np.array(list(reversed(v))),2.0,-1,-1,.025)  #.01 = 1% per timestep~Ma
 
 def aniStep(step):
@@ -36,8 +38,8 @@ def aniStep(step):
 #FFwriter = animation.FFMpegWriter()
 #ani.save('compPlot_1000_fixedA_fixedR.mp4', dpi=150, writer = FFwriter, fps=30, extra_args=['-vcodec', 'libx264'])
 #
-mesh.inject(1)
-
+mesh.inject(5)
+mesh.compPlot()
 #
 #fig = plt.figure(figsize=(20, 16))
 #mesh.inject(1)

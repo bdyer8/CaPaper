@@ -36,6 +36,7 @@ class meshRock:
         self.flux=np.abs(self.v)+np.abs(self.u)
         self.maxF=np.max(self.flux)
         self.r=reactionRate
+        self.injectionAge=0.0
     
     def compPlot(self):
         fig = plt.figure(figsize=(15, 12))
@@ -57,7 +58,7 @@ class meshRock:
         carbonAxes=[-8.5,3.0,-10,2]
         oxygenAxes=[-6.5,-.5,-6,0]
         calciumAxes=[-1.6,-.8,-2,0]
-        sections=[100,200]
+        sections=[15,60]
         everyNX=8
         with plt.style.context('ggplot'):
         
@@ -97,8 +98,8 @@ class meshRock:
             
             rockFluxed.set_xlim([1,self.shape[1]-1])
             rockFluxed.set_ylim([self.shape[0]-1,1])
-            im3 = rockFluxed.imshow(self.printBox('rock','fluxed'), cmap='gnuplot2_r')
-            fig.colorbar(im3, ax=rockFluxed, label='total fluid flux (mass C in Fluid to mass C in Rock)', orientation='horizontal',shrink=.5,pad=.0)
+            im3 = rockFluxed.imshow(self.printBox('fluid','age'), cmap='cubehelix_r')
+            fig.colorbar(im3, ax=rockFluxed, label='fluid age', orientation='horizontal',shrink=.5,pad=.0)
             rockFluxed.plot(sections[0]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][4])
             rockFluxed.plot(sections[1]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][1])
             qui = rockFluxed.quiver(
@@ -148,9 +149,9 @@ class meshRock:
             crossPlotCO.set_ylim([carbonAxes[0], carbonAxes[1]])   
             crossPlotCO.set_ylabel('$\delta$13C Rock', labelpad=-8)
             crossPlotCO.set_xlabel('$\delta$18O Rock', labelpad=0)
-            crossRockCO4 = crossPlotCO.scatter(rockOxygen[:,49],rockCarbon[:,49],color=plt.rcParams['axes.color_cycle'][6], s=15, alpha=.8)            
-            crossRockCO3 = crossPlotCO.scatter(rockOxygen[:,100],rockCarbon[:,100],color=plt.rcParams['axes.color_cycle'][4], s=15, alpha=.8)
-            crossRockCO2 = crossPlotCO.scatter(rockOxygen[:,:250],rockCarbon[:,:250],color=plt.rcParams['axes.color_cycle'][1], s=1, alpha=.3)
+            #crossRockCO4 = crossPlotCO.scatter(rockOxygen[:,49],rockCarbon[:,49],color=plt.rcParams['axes.color_cycle'][6], s=15, alpha=.8)            
+            #crossRockCO3 = crossPlotCO.scatter(rockOxygen[:,100],rockCarbon[:,100],color=plt.rcParams['axes.color_cycle'][4], s=15, alpha=.8)
+            crossRockCO2 = crossPlotCO.scatter(rockOxygen[:,:],rockCarbon[:,:],color=plt.rcParams['axes.color_cycle'][1], s=1, alpha=.3)
             
             crossPlotCCa.set_xlim([calciumAxes[0], calciumAxes[1]])
             crossPlotCCa.set_ylim([carbonAxes[0], carbonAxes[1]])
@@ -167,9 +168,9 @@ class meshRock:
             crossPlotCaFlux.set_xlim([calciumAxes[0], calciumAxes[1]])
             #crossPlotCaFlux.set_ylim([-1, 5])
             rockFluxed=self.printBox('rock','fluxed')
-            crossPlotCaFlux.set_ylabel('Total Flux (log)', labelpad=-5)
+            crossPlotCaFlux.set_ylabel('Fluid Age', labelpad=-5)
             crossPlotCaFlux.set_xlabel('$\delta$44Ca Rock', labelpad=0)            
-            crossRockCaFlux = crossPlotCaFlux.scatter(rockCalcium,np.log(rockFluxed),color=plt.rcParams['axes.color_cycle'][3], s=1, alpha=.7)
+            crossRockCaFlux = crossPlotCaFlux.scatter(rockCalcium,self.printBox('fluid','age'),color=plt.rcParams['axes.color_cycle'][3], s=1, alpha=.7)
  
 
 
@@ -249,32 +250,36 @@ class meshRock:
             
         # define boundary injection (convert this to pull from call)
         for _ in range(steps):
+            self.injectionAge=self.injectionAge+1
 #            for x in range(self.shape[0]):
 #                for y in range(self.shape[1]):
 #                    self.fluid[x][y].d13c=self.rock[x][y].d13c
 #                    self.fluid[x][y].d18o=self.rock[x][y].d18o
-            for x in range(0,self.shape[1]):
-                for y in range(4):
+            for x in range(0,500):
+                for y in range(5):
                     self.fluid[y][x].d13c=-7.0
                     self.fluid[y][x].d18o=-5.5
                     self.fluid[y][x].d44ca=-1.0
+                    self.fluid[y][x].age=0.0
 #            for i in range(90,95):
 #                for k in range(25,30):
 #                    self.fluid[k][i].d13c=-7
 #                    self.fluid[k][i].d18o=-10
-            
+#            for x in range(self.shape[1]):
+#                for y in range(self.shape[0]):
+#                    self.fluid[y][x].age=self.fluid[y][x].age+1.0
 
                 
                     #box.age=0
             
-            delta=['d13c','d18o','d44ca']  #what do you want to track?
+            delta=['d13c','d18o','d44ca','age']  #what do you want to track?
             massRatio=[[1.0,1.0],[4.0,444.0],[3.33,37.0]] #stiochiometric ratio between elements (r,f)
             alpha=[1.0,1.0,0.9995]
             M=self.flowMatrix('fluid',delta)
             
             t=np.linspace(0, 1, 2) 
         
-            for k in range(len(delta)):
+            for k in range(len(delta)-1):
                 for row in range(1,self.shape[0]-1):
                     for column in range(1,self.shape[1]-1):
                         if self.flux[row][column]!=0:
@@ -291,7 +296,7 @@ class meshRock:
                             setattr(self.rock[row][column],delta[k],r[-1])                    
                             
                             if k==0:
-                                self.fluid[row][column].age=self.fluid[row][column].age+1.0
+                                self.fluid[row][column].age=M[3][0][row][column]+1
                                 self.rock[row][column].fluxed=self.rock[row][column].fluxed+self.flux[row][column]
                             
             
