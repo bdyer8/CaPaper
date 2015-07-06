@@ -58,7 +58,7 @@ class meshRock:
         carbonAxes=[-8.5,3.0,-10,2]
         oxygenAxes=[-6.5,-.5,-6,0]
         calciumAxes=[-1.6,-.8,-2,0]
-        sections=[15,60]
+        sections=[50,200]
         everyNX=8
         with plt.style.context('ggplot'):
         
@@ -255,8 +255,8 @@ class meshRock:
 #                for y in range(self.shape[1]):
 #                    self.fluid[x][y].d13c=self.rock[x][y].d13c
 #                    self.fluid[x][y].d18o=self.rock[x][y].d18o
-            for x in range(0,500):
-                for y in range(5):
+            for x in range(0,500,2):
+                for y in range(3):
                     self.fluid[y][x].d13c=-7.0
                     self.fluid[y][x].d18o=-5.5
                     self.fluid[y][x].d44ca=-1.0
@@ -273,7 +273,7 @@ class meshRock:
                     #box.age=0
             
             delta=['d13c','d18o','d44ca','age']  #what do you want to track?
-            massRatio=[[1.0,1.0],[4.0,444.0],[3.33,37.0]] #stiochiometric ratio between elements (r,f)
+            massRatio=[[1.0,1.0],[4.0,444.0],[3.33,2.0]] #stiochiometric ratio between elements (r,f) (Ca, 1-37)
             alpha=[1.0,1.0,0.9995]
             M=self.flowMatrix('fluid',delta)
             
