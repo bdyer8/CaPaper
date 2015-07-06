@@ -16,6 +16,7 @@ from matplotlib import gridspec
 import pickle
 from matplotlib import rcParams
 import pandas as pd
+import copy
         
 class meshRock:
     def __init__(self,meshX,meshY,u,v,d13c,d18o,d44ca,reactionRate):
@@ -58,25 +59,24 @@ class meshRock:
         carbonAxes=[-8.5,3.0,-10,2]
         oxygenAxes=[-6.5,-.5,-6,0]
         calciumAxes=[-1.6,-.8,-2,0]
-        sections=[50,200]
-        everyNX=8
+        sections=[10,40]
+        everyNX=2
         with plt.style.context('ggplot'):
         
             fp = open('cmap.pkl', 'rb')
             cmapDiag = pickle.load(fp)
             fp.close()
             
+            speed = np.sqrt(self.u*self.u + self.v*self.v)
+            lw = 5*speed/speed.max()
+            Y, X = np.mgrid[0:self.shape[0], 0:self.shape[1]]
             d13cRockPlot.set_xlim([1,self.shape[1]-1])
             d13cRockPlot.set_ylim([self.shape[0]-1,1])
             im = d13cRockPlot.imshow(self.printBox('rock','d13c'), cmap='cubehelix', vmin=carbonAxes[2], vmax=carbonAxes[3])   
             fig.colorbar(im, ax=d13cRockPlot, label='$\delta$13C rock', orientation='horizontal',shrink=.5,pad=.0)
             d13cRockPlot.plot(sections[0]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][4])
             d13cRockPlot.plot(sections[1]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][1])
-            qui = d13cRockPlot.quiver(
-                        self.X[::everyNX,::everyNX],self.Y[::everyNX,::everyNX],
-                        np.array(list((self.u[::everyNX,::everyNX]))),np.array(list((self.v[::everyNX,::everyNX]))),
-                        width=0.0005
-                        )
+            qui = d13cRockPlot.streamplot(X, Y, self.u, self.v*-1.0, density=1, color='k', linewidth=lw*.1)
             d13cRockPlot.grid(None)
             d13cRockPlot.axis('off')
             
@@ -88,25 +88,17 @@ class meshRock:
             fig.colorbar(im2, ax=d13cFluidPlot, label='$\delta$44Ca rock', orientation='horizontal',shrink=.5,pad=.0)
             d13cFluidPlot.plot(sections[0]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][4])
             d13cFluidPlot.plot(sections[1]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][1])
-            qui = d13cFluidPlot.quiver(
-                        self.X[::everyNX,::everyNX],self.Y[::everyNX,::everyNX],
-                        np.array(list((self.u[::everyNX,::everyNX]))),np.array(list((self.v[::everyNX,::everyNX]))),
-                        width=0.0005
-                        )
+            qui = d13cFluidPlot.streamplot(X, Y, self.u, self.v*-1.0, density=1, color='k', linewidth=lw*.1)
             d13cFluidPlot.grid(None)
             d13cFluidPlot.axis('off')
             
             rockFluxed.set_xlim([1,self.shape[1]-1])
             rockFluxed.set_ylim([self.shape[0]-1,1])
-            im3 = rockFluxed.imshow(self.printBox('fluid','age'), cmap='cubehelix_r')
+            im3 = rockFluxed.imshow(self.printBox('fluid','age'), cmap='nipy_spectral')
             fig.colorbar(im3, ax=rockFluxed, label='fluid age', orientation='horizontal',shrink=.5,pad=.0)
             rockFluxed.plot(sections[0]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][4])
             rockFluxed.plot(sections[1]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][1])
-            qui = rockFluxed.quiver(
-                        self.X[::everyNX,::everyNX],self.Y[::everyNX,::everyNX],
-                        np.array(list((self.u[::everyNX,::everyNX]))),np.array(list((self.v[::everyNX,::everyNX]))),
-                        width=0.0005
-                        )
+            qui = rockFluxed.streamplot(X, Y, self.u, self.v*-1.0, density=1, color='k', linewidth=lw*.1)
             rockFluxed.grid(None)
             rockFluxed.axis('off')
             
@@ -117,16 +109,12 @@ class meshRock:
             fig.colorbar(im4, ax=covarPlot, label='$\Delta\delta$13C/$\Delta\delta$18O rock', orientation='horizontal',shrink=.5,pad=.0)
             covarPlot.plot(sections[0]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][4])
             covarPlot.plot(sections[1]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][1])
-            qui = covarPlot.quiver(
-                        self.X[::everyNX,::everyNX],self.Y[::everyNX,::everyNX],
-                        np.array(list((self.u[::everyNX,::everyNX]))),np.array(list((self.v[::everyNX,::everyNX]))),
-                        width=0.0005
-                        )
+            qui = covarPlot.streamplot(X, Y, self.u, self.v*-1.0, density=1, color='k', linewidth=lw*.1)
             covarPlot.grid(None)
             covarPlot.axis('off')
             
             stratPlot.set_xlim([carbonAxes[0], carbonAxes[1]])
-            stratPlot.set_ylim([self.shape[0]-15,2])   
+            stratPlot.set_ylim([self.shape[0]-1,1])   
             stratPlot.set_xlabel('$\delta$13C and $\delta$18O Rock', labelpad=0)
             stratPlot.set_ylabel('Depth (meters)', labelpad=0)
             rockCarbon=self.printBox('rock','d13c')
@@ -137,7 +125,7 @@ class meshRock:
             strat4 = stratPlot.plot(rockOxygen[:,sections[1]],np.linspace(0,self.shape[0],len(rockOxygen[:,sections[1]])), color=plt.rcParams['axes.color_cycle'][1], linestyle='--',lw=2, label='$\delta$18O')
             
             stratPlotCa.set_xlim([calciumAxes[0], calciumAxes[1]])
-            stratPlotCa.set_ylim([self.shape[0]-15,2])   
+            stratPlotCa.set_ylim([self.shape[0]-1,1])     
             stratPlotCa.set_xlabel('$\delta$44Ca Rock', labelpad=0)
             stratPlotCa.set_ylabel('Depth (meters)', labelpad=0)
             rockCalcium=self.printBox('rock','d44ca')
@@ -251,26 +239,12 @@ class meshRock:
         # define boundary injection (convert this to pull from call)
         for _ in range(steps):
             self.injectionAge=self.injectionAge+1
-#            for x in range(self.shape[0]):
-#                for y in range(self.shape[1]):
-#                    self.fluid[x][y].d13c=self.rock[x][y].d13c
-#                    self.fluid[x][y].d18o=self.rock[x][y].d18o
-            for x in range(0,500,2):
-                for y in range(3):
+            for x in [5]:
+                for y in range(2):
                     self.fluid[y][x].d13c=-7.0
                     self.fluid[y][x].d18o=-5.5
                     self.fluid[y][x].d44ca=-1.0
                     self.fluid[y][x].age=0.0
-#            for i in range(90,95):
-#                for k in range(25,30):
-#                    self.fluid[k][i].d13c=-7
-#                    self.fluid[k][i].d18o=-10
-#            for x in range(self.shape[1]):
-#                for y in range(self.shape[0]):
-#                    self.fluid[y][x].age=self.fluid[y][x].age+1.0
-
-                
-                    #box.age=0
             
             delta=['d13c','d18o','d44ca','age']  #what do you want to track?
             massRatio=[[1.0,1.0],[4.0,444.0],[3.33,2.0]] #stiochiometric ratio between elements (r,f) (Ca, 1-37)
@@ -296,9 +270,24 @@ class meshRock:
                             setattr(self.rock[row][column],delta[k],r[-1])                    
                             
                             if k==0:
-                                self.fluid[row][column].age=M[3][0][row][column]+1
+                                self.fluid[row][column].age=M[3][0][row][column]
                                 self.rock[row][column].fluxed=self.rock[row][column].fluxed+self.flux[row][column]
-                            
+            
+            
+            for row in range(self.shape[0]):
+                for column in range(self.shape[1]):
+                    self.fluid[row][column].age=self.fluid[row][column].age+1
+           # clean up edges 
+            for row in range(0,self.shape[0]):
+                self.fluid[row][0]=copy.copy(self.fluid[row][1])
+                self.fluid[row][-1]=copy.copy(self.fluid[row][-2])
+                self.rock[row][0]=copy.copy(self.rock[row][1])
+                self.rock[row][-1]=copy.copy(self.rock[row][-2])
+            for column in range(0,self.shape[1]):
+                self.fluid[0][column]=copy.copy(self.fluid[1][column])
+                self.fluid[-1][column]=copy.copy(self.fluid[-2][column])
+                self.rock[0][column]=copy.copy(self.rock[1][column])
+                self.rock[-1][column]=copy.copy(self.rock[-2][column])
             
     
 
