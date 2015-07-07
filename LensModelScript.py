@@ -20,31 +20,31 @@ import pandas as pd
 
 reload(DiagenesisMesh)
      
-#meshX=500
-#meshY=80
-#u=load('uWideLens2.npy')
-#v=load('vWideLens2.npy')
-#u=u[:,:]*.1
-#v=v[:,:]*.1
-#mesh=DiagenesisMesh.meshRock(meshX,meshY,np.array(list(reversed(u))),np.array(list(reversed(v))),2.0,-1,-1,.025)  #.01 = 1% per timestep~Ma
+meshX=500
+meshY=80
+u=load('uLensSeaWater.npy')
+v=load('vLensSeaWater.npy')
+u=u[:,:]*100
+v=v[:,:]*-100
+mesh=DiagenesisMesh.meshRock(meshX,meshY,np.array(list(reversed(u))),np.array(list(reversed(v))),2.0,-1,-1,.025)  #.01 = 1% per timestep~Ma
 
 def aniStep(step):
     mesh.inject(1)
     mesh.compPlotAni(fig)
 
 
-#fig = plt.figure(figsize=(20, 16))
-#ani = animation.FuncAnimation(fig, aniStep, frames=300)
-#FFwriter = animation.FFMpegWriter()
-#ani.save('compPlot_1000_fixedA_fixedR_age.mp4', dpi=150, writer = FFwriter, fps=30, extra_args=['-vcodec', 'libx264'])
-meshX=50
-meshY=20
-u=np.ones([20,50])*-10.0*.1
-v=np.ones([20,50])*10.0*.1*(range(1,meshX+1)*np.ones([20,50]))/25.0
-mesh=DiagenesisMesh.meshRock(meshX,meshY,np.array(list(reversed(u))),np.array(list(reversed(v))),2.0,-1,-1,.25)  #.01 = 1% per timestep~Ma
+fig = plt.figure(figsize=(20, 16))
+ani = animation.FuncAnimation(fig, aniStep, frames=500)
+FFwriter = animation.FFMpegWriter()
+ani.save('compPlot_500_fixedA_fixedR_age_realAdvect.mp4', dpi=150, writer = FFwriter, fps=30, extra_args=['-vcodec', 'libx264'])
+#meshX=50
+#meshY=20
+#u=np.ones([20,50])*-10.0*1
+#v=np.ones([20,50])*10.0*1*(range(1,meshX+1)*np.ones([20,50]))/25.0
+#mesh=DiagenesisMesh.meshRock(meshX,meshY,np.array(list(reversed(u))),np.array(list(reversed(v))),2.0,-1,-1,.25)  #.01 = 1% per timestep~Ma
 
-mesh.inject(100)
-mesh.compPlot()
+#mesh.inject(20)
+#mesh.compPlot()
 #
 #fig = plt.figure(figsize=(20, 16))
 #mesh.inject(1)

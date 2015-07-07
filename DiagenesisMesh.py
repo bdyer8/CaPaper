@@ -59,7 +59,7 @@ class meshRock:
         carbonAxes=[-8.5,3.0,-10,2]
         oxygenAxes=[-6.5,-.5,-6,0]
         calciumAxes=[-1.6,-.8,-2,0]
-        sections=[10,40]
+        sections=[50,200]
         everyNX=2
         with plt.style.context('ggplot'):
         
@@ -68,7 +68,7 @@ class meshRock:
             fp.close()
             
             speed = np.sqrt(self.u*self.u + self.v*self.v)
-            lw = 5*speed/speed.max()
+            lw = 10*speed/speed.max()
             Y, X = np.mgrid[0:self.shape[0], 0:self.shape[1]]
             d13cRockPlot.set_xlim([1,self.shape[1]-1])
             d13cRockPlot.set_ylim([self.shape[0]-1,1])
@@ -76,7 +76,7 @@ class meshRock:
             fig.colorbar(im, ax=d13cRockPlot, label='$\delta$13C rock', orientation='horizontal',shrink=.5,pad=.0)
             d13cRockPlot.plot(sections[0]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][4])
             d13cRockPlot.plot(sections[1]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][1])
-            qui = d13cRockPlot.streamplot(X, Y, self.u, self.v, density=.5, color='k', linewidth=lw*.1)
+            qui = d13cRockPlot.streamplot(X, Y, self.u, self.v, density=.5, color='k', linewidth=lw)
             d13cRockPlot.grid(None)
             d13cRockPlot.axis('off')
             
@@ -88,17 +88,17 @@ class meshRock:
             fig.colorbar(im2, ax=d13cFluidPlot, label='$\delta$44Ca rock', orientation='horizontal',shrink=.5,pad=.0)
             d13cFluidPlot.plot(sections[0]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][4])
             d13cFluidPlot.plot(sections[1]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][1])
-            qui = d13cFluidPlot.streamplot(X, Y, self.u, self.v, density=.5, color='k', linewidth=lw*.1)
+            qui = d13cFluidPlot.streamplot(X, Y, self.u, self.v, density=.5, color='k', linewidth=lw)
             d13cFluidPlot.grid(None)
             d13cFluidPlot.axis('off')
             
             rockFluxed.set_xlim([1,self.shape[1]-1])
             rockFluxed.set_ylim([self.shape[0]-1,1])
-            im3 = rockFluxed.imshow(self.printBox('fluid','age'), cmap='cubehelix')
+            im3 = rockFluxed.imshow(self.printBox('fluid','age'), cmap='cubehelix', vmin=0, vmax=self.injectionAge)
             fig.colorbar(im3, ax=rockFluxed, label='fluid age', orientation='horizontal',shrink=.5,pad=.0)
             rockFluxed.plot(sections[0]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][4])
             rockFluxed.plot(sections[1]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][1])
-            qui = rockFluxed.streamplot(X, Y, self.u, self.v, density=.5, color='k', linewidth=lw*.1)
+            qui = rockFluxed.streamplot(X, Y, self.u, self.v, density=.5, color='k', linewidth=lw)
             rockFluxed.grid(None)
             rockFluxed.axis('off')
             
@@ -109,7 +109,7 @@ class meshRock:
             fig.colorbar(im4, ax=covarPlot, label='$\delta$18O rock', orientation='horizontal',shrink=.5,pad=.0)
             covarPlot.plot(sections[0]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][4])
             covarPlot.plot(sections[1]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][1])
-            qui = covarPlot.streamplot(X, Y, self.u, self.v, density=.5, color='k', linewidth=lw*.1)
+            qui = covarPlot.streamplot(X, Y, self.u, self.v, density=.5, color='k', linewidth=lw)
             covarPlot.grid(None)
             covarPlot.axis('off')
             
@@ -226,12 +226,12 @@ class meshRock:
 
         for _ in range(steps):
             def AdvectionStep(delta,boundary):         
-                nt = 5 #time steps
+                nt = 10 #time steps
                 nx=self.shape[1]
                 ny=self.shape[0]
                 dx = 1
                 dy = 1
-                dt = .01
+                dt = .02
                 u = self.u
                 v = self.v
                 cX=np.zeros([len(delta),self.shape[0],self.shape[1]]) 
@@ -245,13 +245,13 @@ class meshRock:
                 for k in range(len(delta)):
                     cX[k][:,:]=self.printBox('fluid',delta[k])    
                     for n in range(nt+1): ##loop across number of time steps
-                        cX[k][6:9,5:-5:6]=boundary[k]
+                        cX[k][0:5,0:-1]=boundary[k]
                         cXn = cX[k].copy()
                         for i in range(1,ny-1):
                             for j in range(1,nx-1):
                                 cX[k][i,j]=   (   cXn[i,j]
-                                            - (abso(u[i,j]) * dt/dx * (cXn[i,j] - cXn[i+ySign[i,j],j]))
-                                            - (abso(v[i,-j]) * dt/dy * (cXn[i,j] - cXn[i,j+xSign[i,j]]))
+                                            - (abso(v[i,j]) * dt/dx * (cXn[i,j] - cXn[i+ySign[i,j],j]))
+                                            - (abso(u[i,j]) * dt/dy * (cXn[i,j] - cXn[i,j+xSign[i,j]]))
                                            )
                     
                 return cX
