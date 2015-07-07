@@ -4,7 +4,7 @@ Created on Wed Jun 17 11:41:59 2015
 
 @author: bdyer
 """
-
+import math
 import scipy.integrate as integrate
 import matplotlib.pyplot as plt
 import numpy as np
@@ -76,7 +76,7 @@ class meshRock:
             fig.colorbar(im, ax=d13cRockPlot, label='$\delta$13C rock', orientation='horizontal',shrink=.5,pad=.0)
             d13cRockPlot.plot(sections[0]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][4])
             d13cRockPlot.plot(sections[1]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][1])
-            qui = d13cRockPlot.streamplot(X, Y, self.u, self.v*-1.0, density=1, color='k', linewidth=lw*.1)
+            qui = d13cRockPlot.streamplot(X, Y, self.u, self.v, density=.5, color='k', linewidth=lw*.1)
             d13cRockPlot.grid(None)
             d13cRockPlot.axis('off')
             
@@ -88,28 +88,28 @@ class meshRock:
             fig.colorbar(im2, ax=d13cFluidPlot, label='$\delta$44Ca rock', orientation='horizontal',shrink=.5,pad=.0)
             d13cFluidPlot.plot(sections[0]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][4])
             d13cFluidPlot.plot(sections[1]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][1])
-            qui = d13cFluidPlot.streamplot(X, Y, self.u, self.v*-1.0, density=1, color='k', linewidth=lw*.1)
+            qui = d13cFluidPlot.streamplot(X, Y, self.u, self.v, density=.5, color='k', linewidth=lw*.1)
             d13cFluidPlot.grid(None)
             d13cFluidPlot.axis('off')
             
             rockFluxed.set_xlim([1,self.shape[1]-1])
             rockFluxed.set_ylim([self.shape[0]-1,1])
-            im3 = rockFluxed.imshow(self.printBox('fluid','age'), cmap='nipy_spectral')
+            im3 = rockFluxed.imshow(self.printBox('fluid','age'), cmap='cubehelix')
             fig.colorbar(im3, ax=rockFluxed, label='fluid age', orientation='horizontal',shrink=.5,pad=.0)
             rockFluxed.plot(sections[0]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][4])
             rockFluxed.plot(sections[1]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][1])
-            qui = rockFluxed.streamplot(X, Y, self.u, self.v*-1.0, density=1, color='k', linewidth=lw*.1)
+            qui = rockFluxed.streamplot(X, Y, self.u, self.v, density=.5, color='k', linewidth=lw*.1)
             rockFluxed.grid(None)
             rockFluxed.axis('off')
             
             covarPlot.set_xlim([1,self.shape[1]-1])
             covarPlot.set_ylim([self.shape[0]-1,1])
-            ratio=np.abs(2-self.printBox('rock','d13c'))/np.abs(-1-self.printBox('rock','d18o'))-1
-            im4 = covarPlot.imshow(ratio, cmap='seismic_r', vmin=0, vmax=2)
-            fig.colorbar(im4, ax=covarPlot, label='$\Delta\delta$13C/$\Delta\delta$18O rock', orientation='horizontal',shrink=.5,pad=.0)
+            ratio=np.abs(self.printBox('rock','d13c'))/np.abs(self.printBox('rock','d18o'))+2
+            im4 = covarPlot.imshow(self.printBox('rock','d18o'), cmap='cubehelix', vmin=-6, vmax=-1)
+            fig.colorbar(im4, ax=covarPlot, label='$\delta$18O rock', orientation='horizontal',shrink=.5,pad=.0)
             covarPlot.plot(sections[0]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][4])
             covarPlot.plot(sections[1]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][1])
-            qui = covarPlot.streamplot(X, Y, self.u, self.v*-1.0, density=1, color='k', linewidth=lw*.1)
+            qui = covarPlot.streamplot(X, Y, self.u, self.v, density=.5, color='k', linewidth=lw*.1)
             covarPlot.grid(None)
             covarPlot.axis('off')
             
@@ -159,16 +159,7 @@ class meshRock:
             crossPlotCaFlux.set_ylabel('Fluid Age', labelpad=-5)
             crossPlotCaFlux.set_xlabel('$\delta$44Ca Rock', labelpad=0)            
             crossRockCaFlux = crossPlotCaFlux.scatter(rockCalcium,self.printBox('fluid','age'),color=plt.rcParams['axes.color_cycle'][3], s=1, alpha=.7)
- 
-
-
-            #for arrow canyon data
-
-            AC=pd.read_csv('ArrowCanyon.csv')
-            crossPlotCCa.scatter(AC.d44ca,AC.d13c,facecolor=plt.rcParams['axes.color_cycle'][0], edgecolor=[.2,.2,.2], s=10, alpha=.85)
-            crossPlotCaO.scatter(AC.d44ca,AC.d18o,facecolor=plt.rcParams['axes.color_cycle'][0],  edgecolor=[.2,.2,.2], s=10, alpha=.85)
-            crossPlotCO.scatter(AC.d18o,AC.d13c,facecolor=plt.rcParams['axes.color_cycle'][0],  edgecolor=[.2,.2,.2], s=10, alpha=.85)
-           
+          
     def plot(self,phase,parameter):
         phase=getattr(self,phase)
         plt.imshow(np.array(list(reversed(
@@ -217,14 +208,10 @@ class meshRock:
     
     def inject(self,steps):
         def react(M,t):  #redefine as rock, fluid?
-            rockDelta,fluidDelta,flux,rr,fr,alpha=M
-            #parameter table for fluid composition
-            #        
+            rockDelta,fluidDelta,flux,rr,fr,alpha=M     
             rockMass=1.0*rr
             fluidMass=flux*fr
             reactingMass=rockMass+fluidMass
-            #variableAlpha=1-(1-alpha)*(flux**(.25))/self.maxF**(.25)
-            #fIn=self.r*flux*rr #flux = scaled to carbon, this forces reactions at right stiochiometric ratio
             fIn=self.r*rockMass     #fixed reaction rate per box       
             fOut=fIn
             reactingDelta=fluidDelta+(alpha-1.0)*10**3
@@ -236,30 +223,55 @@ class meshRock:
         
             return [rockDelta1,fluidDelta1,flux1,0,0,0]
             
-        # define boundary injection (convert this to pull from call)
+
         for _ in range(steps):
-            self.injectionAge=self.injectionAge+1
-            for x in [5]:
-                for y in range(2):
-                    self.fluid[y][x].d13c=-7.0
-                    self.fluid[y][x].d18o=-5.5
-                    self.fluid[y][x].d44ca=-1.0
-                    self.fluid[y][x].age=0.0
+            def AdvectionStep(delta,boundary):         
+                nt = 5 #time steps
+                nx=self.shape[1]
+                ny=self.shape[0]
+                dx = 1
+                dy = 1
+                dt = .01
+                u = self.u
+                v = self.v
+                cX=np.zeros([len(delta),self.shape[0],self.shape[1]]) 
+                abso=np.abs
+                ySign,xSign=np.ones([2,ny,nx])
+                for i in range(ny):
+                    for k in range(nx):
+                        ySign[i,k]=-1*math.copysign(1,v[i,k])
+                        xSign[i,k]=-1*math.copysign(1,u[i,k])
+                
+                for k in range(len(delta)):
+                    cX[k][:,:]=self.printBox('fluid',delta[k])    
+                    for n in range(nt+1): ##loop across number of time steps
+                        cX[k][6:9,5:-5:6]=boundary[k]
+                        cXn = cX[k].copy()
+                        for i in range(1,ny-1):
+                            for j in range(1,nx-1):
+                                cX[k][i,j]=   (   cXn[i,j]
+                                            - (abso(u[i,j]) * dt/dx * (cXn[i,j] - cXn[i+ySign[i,j],j]))
+                                            - (abso(v[i,-j]) * dt/dy * (cXn[i,j] - cXn[i,j+xSign[i,j]]))
+                                           )
+                    
+                return cX
             
-            delta=['d13c','d18o','d44ca','age']  #what do you want to track?
+            self.injectionAge=self.injectionAge+1
+            delta=['d13c','d18o','d44ca','age'] #properties to track
+            boundary=[-7.0,-6.0,-1.0,0.0]
             massRatio=[[1.0,1.0],[4.0,444.0],[3.33,2.0]] #stiochiometric ratio between elements (r,f) (Ca, 1-37)
             alpha=[1.0,1.0,0.9995]
-            M=self.flowMatrix('fluid',delta)
-            
+            #get a matrix of new fluid values here:
+            cX=AdvectionStep(delta,boundary)
+            ## below here we react the new fluid  
             t=np.linspace(0, 1, 2) 
-        
             for k in range(len(delta)-1):
                 for row in range(1,self.shape[0]-1):
                     for column in range(1,self.shape[1]-1):
                         if self.flux[row][column]!=0:
                             z=integrate.odeint(react,
                                                  [getattr(self.rock[row][column],delta[k]),
-                                                 M[k][0][row][column],
+                                                 cX[k][row,column],
                                                  self.flux[row][column],
                                                  massRatio[k][0],massRatio[k][1],
                                                  alpha[k]],
@@ -270,14 +282,14 @@ class meshRock:
                             setattr(self.rock[row][column],delta[k],r[-1])                    
                             
                             if k==0:
-                                self.fluid[row][column].age=M[3][0][row][column]
-                                self.rock[row][column].fluxed=self.rock[row][column].fluxed+self.flux[row][column]
+                                self.fluid[row][column].age=1+cX[-1][row][column]
+#                                self.rock[row][column].fluxed=self.rock[row][column].fluxed+self.flux[row][column]
+#            
             
-            
-            for row in range(self.shape[0]):
-                for column in range(self.shape[1]):
-                    self.fluid[row][column].age=self.fluid[row][column].age+1
-           # clean up edges 
+#            for row in range(self.shape[0]):
+#                for column in range(self.shape[1]):
+#                    self.fluid[row][column].age=self.fluid[row][column].age+1
+#           # clean up edges 
             for row in range(0,self.shape[0]):
                 self.fluid[row][0]=copy.copy(self.fluid[row][1])
                 self.fluid[row][-1]=copy.copy(self.fluid[row][-2])
