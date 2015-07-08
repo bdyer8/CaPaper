@@ -232,6 +232,9 @@ class meshRock:
                 dx = 1
                 dy = 1
                 dt = .02
+                courant=np.abs(self.u).max()*dt+np.abs(self.v).max()*dt
+                if courant>0.9:
+                    print('Warning: advecting faster than timestep can resolve, lower advection or decrease timestep (dt)')
                 u = self.u
                 v = self.v
                 cX=np.zeros([len(delta),self.shape[0],self.shape[1]]) 

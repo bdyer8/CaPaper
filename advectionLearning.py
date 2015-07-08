@@ -32,7 +32,7 @@ for i in range(mesh.shape[0]):
 
 
 for n in range(nt+1): ##loop across number of time steps
-    cX[0:5,1:-1:5]=-2
+    cX[0:5,1:-1:10]=-2
     cXn = cX.copy()
     for i in range(1,ny-1):
         for j in range(1,nx-1):
