@@ -24,7 +24,7 @@ dy = 1
 dt = .01
 
 u = mesh.u
-v = mesh.v
+v = mesh.v*2
 #cX=mesh.printBox('fluid','d13c')
 copy=copy.copy
 abso=np.abs
@@ -42,8 +42,7 @@ def timeSavingFunction(cX,cXi,cYi,v,u):
                         - (abso(u) * dt/dy * (cXn - cXi))
           )
     return cX
-cXi = cX.copy()
-cYi = cX.copy()
+
 Js=np.ones((ny,nx))
 Is=np.ones((ny,nx))
 JsN=np.ones((ny,nx))
@@ -55,15 +54,14 @@ for i in range(1,ny-1):
         JsN[i,j]=j
         Is[i,j]=i+ySign[i,j]
         IsN[i,j]=i
-        cXi[i,j]=cX[i,j+xSign[i,j]]
-        cYi[i,j]=cX[i+ySign[i,j],j]
+
     
 
  
 time=time.time
 def anim(cX):
     for n in range(nt+1): ##loop across number of time steps
-        cX[-4:-1,:]=-2
+        cX[1:3,0:-1:10]=-2
         cXn = cX.copy()
         cX[1:-1,1:-1]=np.array(map(timeSavingFunction,cXn[1:-1,1:-1],cXn[list(IsN[1:-1,1:-1]),list(Js[1:-1,1:-1])],cXn[list(Is[1:-1,1:-1]),list(JsN[1:-1,1:-1])],v[1:-1,1:-1],u[1:-1,1:-1]))    
     
