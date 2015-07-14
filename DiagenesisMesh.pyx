@@ -50,7 +50,7 @@ class meshRock:
         self.maxF=np.max(self.flux)
         self.r=reactionRate
         self.injectionAge=0.0
-        
+        self.xSize=10 #m to box
         self.Js=np.ones((meshY,meshX))
         self.Is=np.ones((meshY,meshX))
         self.JsN=np.ones((meshY,meshX))
@@ -69,7 +69,7 @@ class meshRock:
                 self.Is[i,j]=i+ySign[i,j]
                 self.IsN[i,j]=i
         self.nt=1  #advection steps per reaction step  
-        self.dt=.9  # yr
+        self.dt=.95/(np.abs(self.u).max()+np.abs(self.v).max()) # yr
         courant=np.abs(self.u).max()*self.dt+np.abs(self.v).max()*self.dt
         if courant>1.0:
             print(courant)
@@ -95,7 +95,7 @@ class meshRock:
         stratPlotCa = plt.subplot(gs[0:2,4])
         carbonAxes=[-8.5,3.0,-10,2]
         oxygenAxes=[-6.5,-.5,-6,0]
-        calciumAxes=[-1.6,-.8,-2,0]
+        calciumAxes=[-1.6,-.8,-2,-1]
         sections=[10,30]
         everyNX=2
         with plt.style.context('ggplot'):
@@ -105,7 +105,7 @@ class meshRock:
             fp.close()
             
             speed = np.sqrt(self.u*self.u + self.v*self.v)
-            lw = 10*speed/speed.max()
+            lw = 5*speed/speed.max()
             Y, X = np.mgrid[0:self.shape[0], 0:self.shape[1]]
             d13cRockPlot.set_xlim([1,self.shape[1]-1])
             d13cRockPlot.set_ylim([self.shape[0]-1,1])
@@ -121,7 +121,7 @@ class meshRock:
             
             d13cFluidPlot.set_xlim([1,self.shape[1]-1])
             d13cFluidPlot.set_ylim([self.shape[0]-1,1])
-            im2 = d13cFluidPlot.imshow(self.printBox('rock','d44ca'), cmap='seismic_r', vmin=calciumAxes[2], vmax=calciumAxes[3])
+            im2 = d13cFluidPlot.imshow(self.printBox('rock','d44ca'), cmap='cubehelix', vmin=calciumAxes[2], vmax=calciumAxes[3])
             fig.colorbar(im2, ax=d13cFluidPlot, label='$\delta$44Ca rock', orientation='horizontal',shrink=.5,pad=.0)
             d13cFluidPlot.plot(sections[0]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][4])
             d13cFluidPlot.plot(sections[1]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][1])
@@ -131,7 +131,7 @@ class meshRock:
             
             rockFluxed.set_xlim([1,self.shape[1]-1])
             rockFluxed.set_ylim([self.shape[0]-1,1])
-            im3 = rockFluxed.imshow(self.printBox('fluid','age'), cmap='gist_stern_r', vmin=0, vmax=self.printBox('fluid','age').max()*1.1)
+            im3 = rockFluxed.imshow(self.printBox('fluid','age'), cmap='Paired', vmin=0, vmax=self.printBox('fluid','age').max()*1.1)
             fig.colorbar(im3, ax=rockFluxed, label='fluid age', orientation='horizontal',shrink=.5,pad=.0)
             rockFluxed.plot(sections[0]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][4])
             rockFluxed.plot(sections[1]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][1])
@@ -144,8 +144,8 @@ class meshRock:
             misfit=(self.printBox('rock','d18o')-self.printBox('rock','d13c')*((2.0--7.0)/(-1.0--6.0))+4.6)
             #ratio=(2-np.abs(self.printBox('rock','d13c')-2))/(-1-(self.printBox('rock','d18o')+1))
             #ratio[np.isnan(ratio)]=2.0
-            im4 = covarPlot.imshow(misfit, cmap='ocean_r', vmin=0,vmax=5)
-            fig.colorbar(im4, ax=covarPlot, label='$\Delta\delta$13C \ $\Delta\delta$18O rock', orientation='horizontal',shrink=.5,pad=.0)
+            im4 = covarPlot.imshow(speed*self.xSize, cmap='nipy_spectral_r')
+            fig.colorbar(im4, ax=covarPlot, label='fluid speed (m/yr)', orientation='horizontal',shrink=.5,pad=.0)
             covarPlot.plot(sections[0]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][4])
             covarPlot.plot(sections[1]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][1])
             qui = covarPlot.streamplot(X, Y, self.u, self.v, density=.5, color='k', linewidth=lw)
@@ -178,19 +178,19 @@ class meshRock:
             crossPlotCO.set_xlabel('$\delta$18O Rock', labelpad=0)
             #crossRockCO4 = crossPlotCO.scatter(rockOxygen[:,49],rockCarbon[:,49],color=plt.rcParams['axes.color_cycle'][6], s=15, alpha=.8)            
             #crossRockCO3 = crossPlotCO.scatter(rockOxygen[:,100],rockCarbon[:,100],color=plt.rcParams['axes.color_cycle'][4], s=15, alpha=.8)
-            crossRockCO2 = crossPlotCO.scatter(rockOxygen,rockCarbon,c=fluidA, cmap='gist_stern_r', s=4,alpha=.8,edgecolors='none',vmin=0, vmax=fluidA.max()*1.1)
+            crossRockCO2 = crossPlotCO.scatter(rockOxygen,rockCarbon,c=fluidA, cmap='Paired', s=7,alpha=.8,edgecolors='none',vmin=0, vmax=fluidA.max()*1.1)
             
             crossPlotCCa.set_xlim([calciumAxes[0], calciumAxes[1]])
             crossPlotCCa.set_ylim([carbonAxes[0], carbonAxes[1]])
             crossPlotCCa.set_ylabel('$\delta$13C Rock', labelpad=-8)
             crossPlotCCa.set_xlabel('$\delta$44Ca Rock', labelpad=0)            
-            crossRockCCa2 = crossPlotCCa.scatter(rockCalcium,rockCarbon,c=fluidA, cmap='gist_stern_r', s=4,alpha=.8,edgecolors='none',vmin=0, vmax=fluidA.max()*1.1)
+            crossRockCCa2 = crossPlotCCa.scatter(rockCalcium,rockCarbon,c=fluidA, cmap='Paired', s=7,alpha=.8,edgecolors='none',vmin=0, vmax=fluidA.max()*1.1)
             
             crossPlotCaO.set_xlim([calciumAxes[0], calciumAxes[1]])
             crossPlotCaO.set_ylim([oxygenAxes[0], oxygenAxes[1]])
             crossPlotCaO.set_ylabel('$\delta$18O Rock', labelpad=-5)
             crossPlotCaO.set_xlabel('$\delta$44Ca Rock', labelpad=0)            
-            crossRockCaO2 = crossPlotCaO.scatter(rockCalcium,rockOxygen,c=fluidA, cmap='gist_stern_r', s=4,alpha=.8,edgecolors='none',vmin=0, vmax=fluidA.max()*1.1)
+            crossRockCaO2 = crossPlotCaO.scatter(rockCalcium,rockOxygen,c=fluidA, cmap='Paired', s=7,alpha=.8,edgecolors='none',vmin=0, vmax=fluidA.max()*1.1)
             
             crossPlotCaFlux.set_xlim([calciumAxes[0], calciumAxes[1]])
             crossPlotCaFlux.set_ylim([0, self.printBox('fluid','age').max()*1.1])
@@ -238,7 +238,7 @@ class meshRock:
         #cdef float cX, cXn, R, F, newFluid, newRock, dRock, dFluid, onesShape
         delta=['d13c','d18o','d44ca','age'] #properties to track
         boundary=[-7.0,-6.0,-1.0,0.0] #BOUNDARY CONDITIONS
-        massRatio=[[240.0,2.0],[960.0,889.0],[800.0,70.0]] #stiochiometric ratio between elements (r,f) (Ca, 1-37)
+        massRatio=[[240.0,2.0],[960.0,889.0],[800.0,70.0]]*self.xSize**2 #stiochiometric ratio between elements (r,f) (Ca, 1-37)
         alpha=[1.0,1.0,0.9995]
         nt = self.nt 
         nx=self.shape[1]
@@ -287,7 +287,7 @@ class meshRock:
                     for column in xrange(1,nx-1):
                         setattr(self.rock[row][column],delta[k],newRock[row,column])
                         setattr(self.fluid[row][column],delta[k],newFluid[row,column])    
-                        if k==0:
+                        if k==0 and ~self.zeroSum[row][column]:
                             self.fluid[row][column].age=self.dt+cX[-1][row][column]
 
                 for row in xrange(0,ny):
@@ -297,19 +297,13 @@ class meshRock:
                     setattr(self.rock[row][-1],delta[k],getattr(self.rock[row][-2],delta[k]))
                     
                     
-#                self.fluid[row][0]=copy.copy((self.fluid[row][1]))
-#                self.fluid[row][-1]=copy.copy((self.fluid[row][-2]))
-#                self.rock[row][0]=copy.copy((self.rock[row][1]))
-#                self.rock[row][-1]=copy.copy((self.rock[row][-2]))
+
                 for column in xrange(0,nx):
                     setattr(self.fluid[0][column],delta[k],getattr(self.fluid[1][column],delta[k]))
                     setattr(self.fluid[-1][column],delta[k],getattr(self.fluid[-2][column],delta[k]))
                     setattr(self.rock[0][column],delta[k],getattr(self.rock[1][column],delta[k]))
                     setattr(self.rock[-1][column],delta[k],getattr(self.rock[-2][column],delta[k]))
-#                self.fluid[0][column]=copy.copy((self.fluid[1][column]))
-#                self.fluid[-1][column]=copy.copy((self.fluid[-2][column]))
-#                self.rock[0][column]=copy.copy((self.rock[1][column]))
-#                self.rock[-1][column]=copy.copy((self.rock[-2][column]))
+
 
             for column in xrange(0,nx):
                 setattr(self.fluid[0][column],'age',getattr(self.fluid[1][column],'age'))
