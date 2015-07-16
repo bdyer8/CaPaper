@@ -30,7 +30,7 @@ cdef inline int int_max(int a, int b): return a if a >= b else b
 cdef inline int int_min(int a, int b): return a if a <= b else b
        
 class meshRock:
-    def __init__(self,meshX,meshY,u,v,d13c,d18o,d44ca,reactionRate):
+    def __init__(self,meshX,meshY,u,v,d13c,d18o,d44ca,reactionRate,injectionSites):
         self.u=u
         self.v=v 
         self.shape=[meshY,meshX]
@@ -55,6 +55,7 @@ class meshRock:
         self.Is=np.ones((meshY,meshX))
         self.JsN=np.ones((meshY,meshX))
         self.IsN=np.ones((meshY,meshX))
+        self.injectionSites=injectionSites
         ySign,xSign=np.ones([2,self.shape[0],self.shape[1]])
         
         for i in range(self.shape[0]):
@@ -69,7 +70,7 @@ class meshRock:
                 self.Is[i,j]=i+ySign[i,j]
                 self.IsN[i,j]=i
         self.nt=1  #advection steps per reaction step  
-        self.dt=.90/(np.abs(self.u).max()+np.abs(self.v).max()) # yr
+        self.dt=.99/(np.abs(self.u).max()+np.abs(self.v).max()) # yr
         courant=np.abs(self.u).max()*self.dt+np.abs(self.v).max()*self.dt
         if courant>1.0:
             print(courant)
@@ -88,13 +89,14 @@ class meshRock:
         plt.show()
     
     def compPlotAni(self,fig):
-        gs = gridspec.GridSpec(4, 3) 
+        gs = gridspec.GridSpec(5, 3) 
         d13cRockPlot = plt.subplot(gs[0,:])
-        fluidAge = plt.subplot(gs[1,:])
-        fluidSpeed = plt.subplot(gs[2,:])
-        crossPlotCOAge = plt.subplot(gs[3,0])
-        crossPlotCOSpeed = plt.subplot(gs[3,1])
-        ageC = plt.subplot(gs[3,2])
+        linearPlot = plt.subplot(gs[1,:])
+        fluidAge = plt.subplot(gs[2,:])
+        fluidSpeed = plt.subplot(gs[3,:])
+        crossPlotCOAge = plt.subplot(gs[4,0])
+        crossPlotCOSpeed = plt.subplot(gs[4,1])
+        ageC = plt.subplot(gs[4,2])
         text=d13cRockPlot.text(.0,.0,(str(int(self.injectionAge*self.dt))+' Years'),family='sans-serif')
         carbonAxes=[-6,6,-5,5]
         oxygenAxes=[-6,6,-5,5] #second set is for cmaps
@@ -102,7 +104,7 @@ class meshRock:
         with plt.style.context('ggplot'):
             
             speed = np.sqrt(self.u*self.u + self.v*self.v)
-            lw = 2.0*speed/speed.max()
+            lw = 1.0*speed/speed.max()
             xW=500;yW=80;
             x = np.linspace(0,xW,self.shape[1])
             y = np.linspace(0,yW,self.shape[0])
@@ -112,17 +114,21 @@ class meshRock:
             #d13cRockPlot.set_ylim([self.shape[0]-1,1])
             im = d13cRockPlot.imshow(self.printBox('rock','d13c'), cmap=self.viridis, vmin=carbonAxes[2], vmax=carbonAxes[3],aspect='auto',extent=[0,xW,yW,0])   
             fig.colorbar(im, ax=d13cRockPlot, label='$\delta$13C rock', orientation='vertical',pad=.0)
-            qui = d13cRockPlot.streamplot(X, Y, self.u, self.v,color='k',linewidth=lw)
+            qui = d13cRockPlot.streamplot(X, Y, self.u, self.v,color='k',linewidth=lw,density=.5)
             d13cRockPlot.grid(None)
             d13cRockPlot.axis('off')
             
-                        
+            im = linearPlot.imshow(np.abs((self.printBox('rock','d13c')-self.printBox('rock','d18o'))),cmap='ocean_r',vmin=0,vmax=10,aspect='auto',extent=[0,xW,yW,0])   
+            fig.colorbar(im, ax=linearPlot, label='d13c-d18o', orientation='vertical',pad=.0)
+            qui = linearPlot.streamplot(X, Y, self.u, self.v,color='k',linewidth=lw,density=.5)
+            linearPlot.grid(None)
+            linearPlot.axis('off')            
             
             #fluidAge.set_xlim([1,self.shape[1]-1])
             #fluidAge.set_ylim([self.shape[0]-1,1])
             im3 = fluidAge.imshow(np.log(self.printBox('fluid','age')), cmap='Paired',aspect='auto',extent=[0,xW,yW,0])
             fig.colorbar(im3, ax=fluidAge, label='fluid age (log years)', orientation='vertical',pad=.0)
-            qui = fluidAge.streamplot(X, Y, (self.u), self.v,color='k',linewidth=lw)
+            qui = fluidAge.streamplot(X, Y, (self.u), self.v,color='k',linewidth=lw,density=.5)
             fluidAge.grid(None)
             fluidAge.axis('off')
             
@@ -130,7 +136,7 @@ class meshRock:
             #fluidSpeed.set_ylim([self.shape[0]-1,1])
             im4 = fluidSpeed.imshow(speed, cmap='jet',aspect='auto',extent=[0,xW,yW,0])
             fig.colorbar(im4, ax=fluidSpeed, label='fluid speed (m/yr)', orientation='vertical',pad=.0)
-            qui = fluidSpeed.streamplot(X, Y, (self.u), self.v,color='k',linewidth=lw)
+            qui = fluidSpeed.streamplot(X, Y, (self.u), self.v,color='k',linewidth=lw,density=.5)
             fluidSpeed.grid(None)
             fluidSpeed.axis('off')
                        
@@ -150,7 +156,9 @@ class meshRock:
             crossPlotCOSpeed.set_ylim([carbonAxes[0], carbonAxes[1]])   
             crossPlotCOSpeed.set_ylabel('$\delta$13C Rock', labelpad=-8)
             crossPlotCOSpeed.set_xlabel('$\delta$18O Rock', labelpad=0)
-            crossRockCO2 = crossPlotCOSpeed.scatter(rockOxygen,rockCarbon,c=speed, cmap='jet', s=7,alpha=.8,edgecolors='none')
+            colors=plt.cm.RdYlGn(np.linspace(0,1,self.shape[1]))
+            for i in range(self.shape[1]):
+                crossRockCO2 = crossPlotCOSpeed.scatter(rockOxygen[:,i],rockCarbon[:,i],color=colors[i], s=7,alpha=.8,edgecolors='none')
 
             ageC.set_xlim([0, fluidA.max()*1.1])
             ageC.set_xlim([carbonAxes[0], carbonAxes[1]])   
@@ -208,13 +216,14 @@ class meshRock:
  
                 cdef np.ndarray[np.float_t, ndim=3] cX=np.zeros([loops,ny,nx]) 
                 tStep=self.dt
+                IS=self.injectionSites
                 for k in xrange(len(delta)):
                     cX[k][:,:]=self.printBox('fluid',delta[k])    
                     for n in xrange(nt+1): 
-                        cX[k][:,0]=boundary[k]
+                        cX[k][IS]=boundary[k]
                         #cX[k][-1,2:-1:2]=boundary[k]#BOUNDARY CONDITIONS
                         cXn = cX[k].copy()
-                        cX[k][1:-1,1:-1]=timeSavingFunction(tStep,cXn[1:-1,1:-1],cXn[list(self.IsN[1:-1,1:-1]),list(self.Js[1:-1,1:-1])],cXn[list(self.Is[1:-1,1:-1]),list(self.JsN[1:-1,1:-1])],(v[1:-1,1:-1]),(u[1:-1,1:-1]))    
+                        cX[k][1:-1,1:-1]=timeSavingFunction(tStep,cXn[1:-1,1:-1],cXn[list(self.IsN[1:-1,1:-1]),list(self.Js[1:-1,1:-1])],cXn[list(self.Is[1:-1,1:-1]),list(self.JsN[1:-1,1:-1])],(v[list(self.Is[1:-1,1:-1]),list(self.JsN[1:-1,1:-1])]),(u[list(self.IsN[1:-1,1:-1]),list(self.Js[1:-1,1:-1])]))    
                 return cX
             
             self.injectionAge=self.injectionAge+1

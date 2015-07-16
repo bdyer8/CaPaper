@@ -11,8 +11,8 @@ from matplotlib import pyplot as plt
 
 from sklearn import linear_model, datasets
 
-AC=pd.read_csv('d13cComp.csv')
-COPSE=pd.read_csv('COPSEd13c.csv', header=None, names=['age','d13c'])
+AC=pd.read_csv('swartClino')
+clino=pd.read_csv('swartClino.csv', header=None, names=['age','d13c'])
 
 X=clino.values[:,1:2]
 y=clino.values[:,0:1]
