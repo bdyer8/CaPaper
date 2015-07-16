@@ -126,8 +126,8 @@ class meshRock:
             
             #fluidAge.set_xlim([1,self.shape[1]-1])
             #fluidAge.set_ylim([self.shape[0]-1,1])
-            im3 = fluidAge.imshow(np.log(self.printBox('fluid','age')), cmap='Paired',aspect='auto',extent=[0,xW,yW,0])
-            fig.colorbar(im3, ax=fluidAge, label='fluid age (log years)', orientation='vertical',pad=.0)
+            im3 = fluidAge.imshow((self.printBox('fluid','age')), cmap='Set1',aspect='auto',extent=[0,xW,yW,0])
+            fig.colorbar(im3, ax=fluidAge, label='fluid age (years)', orientation='vertical',pad=.0)
             qui = fluidAge.streamplot(X, Y, (self.u), self.v,color='k',linewidth=lw,density=.5)
             fluidAge.grid(None)
             fluidAge.axis('off')
@@ -150,7 +150,7 @@ class meshRock:
             crossPlotCOAge.set_ylim([carbonAxes[0], carbonAxes[1]])   
             crossPlotCOAge.set_ylabel('$\delta$13C Rock', labelpad=-8)
             crossPlotCOAge.set_xlabel('$\delta$18O Rock', labelpad=0)
-            crossRockCO2 = crossPlotCOAge.scatter(rockOxygen,rockCarbon,c=np.log(fluidA), cmap='Paired', s=7,alpha=.8,edgecolors='none')
+            crossRockCO2 = crossPlotCOAge.scatter(rockOxygen,rockCarbon,c=(fluidA), cmap='Set1', s=7,alpha=.8,edgecolors='none')
 
             crossPlotCOSpeed.set_xlim([oxygenAxes[0], oxygenAxes[1]])
             crossPlotCOSpeed.set_ylim([carbonAxes[0], carbonAxes[1]])   
