@@ -18,31 +18,30 @@ import pickle
 from matplotlib import rcParams
 import pandas as pd
 import time
+from matplotlib.colors import LinearSegmentedColormap
 
-
-u=load('uWideLens2.npy')[0:-1:5,0:250:5]
-v=load('vWideLens2.npy')[0:-1:5,0:250:5]
+#
+u=load('uConverge.npy')
+v=load('vConverge.npy')
+u=u*.1
+v=v*.1
 meshX=u.shape[1]
 meshY=u.shape[0]
-u=u[:,:]*1.0/32.0
-v=v[:,:]*-1.0/32.0
-mesh=DiagenesisMesh.meshRock(meshX,meshY,np.array(list(reversed(u))),np.array(list(reversed(v))),2.0,-1,-1,1.0e-05)  #.01 = 1% per timestep~Ma
+aveSpeed=np.sqrt(v.mean()**2+u.mean()**2)
+AtR=25000.0 #12000 seems good?
+mesh=DiagenesisMesh.meshRock(meshX,meshY,u,v,5,5,-1,aveSpeed/AtR)  
+#mesh.inject(1000)
+#mesh.compPlot()
 
-years=10000
-#temp=time.time()
-mesh.inject(int(years/mesh.dt))
-#print(time.time()-temp)
-mesh.compPlot()
-#%%
 def aniStep(step):
-    mesh.inject(1)
-    mesh.compPlotAni(fig)
+    mesh.compPlotAni(fig)    
+    mesh.inject(1000)
+    
 
-
-#fig = plt.figure(figsize=(20, 16))
-#ani = animation.FuncAnimation(fig, aniStep, frames=500)
-#FFwriter = animation.FFMpegWriter()
-#ani.save('compPlot_500_realFastAdvect.mp4', dpi=150, writer = FFwriter, fps=30, extra_args=['-vcodec', 'libx264'])
+fig = plt.figure(figsize=(20, 16))
+ani = animation.FuncAnimation(fig, aniStep, frames=500)
+FFwriter = animation.FFMpegWriter()
+ani.save('AdvectionReactionTest5.mp4', dpi=150, writer = FFwriter, fps=30, extra_args=['-vcodec', 'libx264'])
 #meshX=4
 #meshY=60
 #u=0*np.ones([meshY,meshX])/4.15  #50m in 100 yr  .25=.5 m/yr
@@ -75,3 +74,12 @@ def aniStep(step):
 #rO=mesh.printBox('rock','d18o')
 #rC=mesh.printBox('rock','d13c')
 #plt.scatter(rO,rC,c=A,cmap='gist_stern_r',s=7,alpha=.8,edgecolors='none',vmin=0, vmax=A.max()*1.1);plt.colorbar()
+
+#%%
+#
+#def save_object(obj, filename):
+#    with open(filename, 'wb') as output:
+#        pickle.dump(obj, output, pickle.HIGHEST_PROTOCOL)
+#
+## sample usage
+#save_object(mesh, '2MaMesh2.pkl')

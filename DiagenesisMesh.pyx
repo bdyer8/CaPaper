@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # cython: boundscheck=False
-# cython: profile=True
 
 """
 Created on Wed Jun 17 11:41:59 2015
@@ -16,18 +15,19 @@ from numpy import load,linspace,meshgrid
 from matplotlib import animation
 from pylab import rcParams
 from matplotlib import gridspec
+from matplotlib.colors import LinearSegmentedColormap
 import pickle
 import copy
 from matplotlib import rcParams
 import pandas as pd
 cimport cython
 cimport numpy as np
+from libc.stdlib cimport abs as c_abs
 
 DTYPE = np.int
 ctypedef np.int_t DTYPE_t
 cdef inline int int_max(int a, int b): return a if a >= b else b
 cdef inline int int_min(int a, int b): return a if a <= b else b
-cdef inline np.float_t float_abs(np.float_t a): return a if a >0 else -1*a
        
 class meshRock:
     def __init__(self,meshX,meshY,u,v,d13c,d18o,d44ca,reactionRate):
@@ -50,7 +50,7 @@ class meshRock:
         self.maxF=np.max(self.flux)
         self.r=reactionRate
         self.injectionAge=0.0
-        self.xSize=10 #m to box
+        self.xSize=1.0 #m to box
         self.Js=np.ones((meshY,meshX))
         self.Is=np.ones((meshY,meshX))
         self.JsN=np.ones((meshY,meshX))
@@ -69,152 +69,107 @@ class meshRock:
                 self.Is[i,j]=i+ySign[i,j]
                 self.IsN[i,j]=i
         self.nt=1  #advection steps per reaction step  
-        self.dt=.95/(np.abs(self.u).max()+np.abs(self.v).max()) # yr
+        self.dt=.90/(np.abs(self.u).max()+np.abs(self.v).max()) # yr
         courant=np.abs(self.u).max()*self.dt+np.abs(self.v).max()*self.dt
         if courant>1.0:
             print(courant)
             print('Warning: advecting faster than timestep can resolve, decrease timestep (dt)')
-
+        if ((self.dt*self.r)*240.0)>1.0:
+            print('Warning: reacting faster than timestep can resolve, decrease timestep (dt)')
     
+        
+        
+        cm_data = pickle.load( open( "viridis.pkl", "rb" ) )
+        self.viridis = LinearSegmentedColormap.from_list('viridis', cm_data)
+
     def compPlot(self):
         fig = plt.figure(figsize=(15, 12))
         self.compPlotAni(fig)
         plt.show()
     
     def compPlotAni(self,fig):
-        gs = gridspec.GridSpec(4, 5) 
-        d13cRockPlot = plt.subplot(gs[0,0:3])
-        d13cFluidPlot = plt.subplot(gs[1,0:3])
-        rockFluxed = plt.subplot(gs[2,0:3])
-        covarPlot = plt.subplot(gs[3,0:3])
-        stratPlot = plt.subplot(gs[0:2,3])
-        crossPlotCO = plt.subplot(gs[2:3,3])
-        crossPlotCCa = plt.subplot(gs[3:,3])
-        crossPlotCaO = plt.subplot(gs[2:3,4])
-        crossPlotCaFlux = plt.subplot(gs[3:,4])
-        stratPlotCa = plt.subplot(gs[0:2,4])
-        carbonAxes=[-8.5,3.0,-10,2]
-        oxygenAxes=[-6.5,-.5,-6,0]
+        gs = gridspec.GridSpec(4, 3) 
+        d13cRockPlot = plt.subplot(gs[0,:])
+        fluidAge = plt.subplot(gs[1,:])
+        fluidSpeed = plt.subplot(gs[2,:])
+        crossPlotCOAge = plt.subplot(gs[3,0])
+        crossPlotCOSpeed = plt.subplot(gs[3,1])
+        ageC = plt.subplot(gs[3,2])
+        text=d13cRockPlot.text(.0,.0,(str(int(self.injectionAge*self.dt))+' Years'),family='sans-serif')
+        carbonAxes=[-6,6,-5,5]
+        oxygenAxes=[-6,6,-5,5] #second set is for cmaps
         calciumAxes=[-1.6,-.8,-2,-1]
-        sections=[10,30]
-        everyNX=2
         with plt.style.context('ggplot'):
-        
-            fp = open('cmap.pkl', 'rb')
-            cmapDiag = pickle.load(fp)
-            fp.close()
             
             speed = np.sqrt(self.u*self.u + self.v*self.v)
-            lw = 5*speed/speed.max()
-            Y, X = np.mgrid[0:self.shape[0], 0:self.shape[1]]
-            d13cRockPlot.set_xlim([1,self.shape[1]-1])
-            d13cRockPlot.set_ylim([self.shape[0]-1,1])
-            im = d13cRockPlot.imshow(self.printBox('rock','d13c'), cmap='cubehelix', vmin=carbonAxes[2], vmax=carbonAxes[3])   
-            fig.colorbar(im, ax=d13cRockPlot, label='$\delta$13C rock', orientation='horizontal',shrink=.5,pad=.0)
-            d13cRockPlot.plot(sections[0]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][4])
-            d13cRockPlot.plot(sections[1]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][1])
-            qui = d13cRockPlot.streamplot(X, Y, self.u, self.v, density=.5, color='k', linewidth=lw)
+            lw = 2.0*speed/speed.max()
+            xW=500;yW=80;
+            x = np.linspace(0,xW,self.shape[1])
+            y = np.linspace(0,yW,self.shape[0])
+            X,Y = np.meshgrid(x,y)
+            
+            #d13cRockPlot.set_xlim([1,self.shape[1]-1])
+            #d13cRockPlot.set_ylim([self.shape[0]-1,1])
+            im = d13cRockPlot.imshow(self.printBox('rock','d13c'), cmap=self.viridis, vmin=carbonAxes[2], vmax=carbonAxes[3],aspect='auto',extent=[0,xW,yW,0])   
+            fig.colorbar(im, ax=d13cRockPlot, label='$\delta$13C rock', orientation='vertical',pad=.0)
+            qui = d13cRockPlot.streamplot(X, Y, self.u, self.v,color='k',linewidth=lw)
             d13cRockPlot.grid(None)
             d13cRockPlot.axis('off')
             
                         
             
-            d13cFluidPlot.set_xlim([1,self.shape[1]-1])
-            d13cFluidPlot.set_ylim([self.shape[0]-1,1])
-            im2 = d13cFluidPlot.imshow(self.printBox('rock','d44ca'), cmap='cubehelix', vmin=calciumAxes[2], vmax=calciumAxes[3])
-            fig.colorbar(im2, ax=d13cFluidPlot, label='$\delta$44Ca rock', orientation='horizontal',shrink=.5,pad=.0)
-            d13cFluidPlot.plot(sections[0]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][4])
-            d13cFluidPlot.plot(sections[1]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][1])
-            qui = d13cFluidPlot.streamplot(X, Y, self.u, self.v, density=.5, color='k', linewidth=lw)
-            d13cFluidPlot.grid(None)
-            d13cFluidPlot.axis('off')
+            #fluidAge.set_xlim([1,self.shape[1]-1])
+            #fluidAge.set_ylim([self.shape[0]-1,1])
+            im3 = fluidAge.imshow(np.log(self.printBox('fluid','age')), cmap='Paired',aspect='auto',extent=[0,xW,yW,0])
+            fig.colorbar(im3, ax=fluidAge, label='fluid age (log years)', orientation='vertical',pad=.0)
+            qui = fluidAge.streamplot(X, Y, (self.u), self.v,color='k',linewidth=lw)
+            fluidAge.grid(None)
+            fluidAge.axis('off')
             
-            rockFluxed.set_xlim([1,self.shape[1]-1])
-            rockFluxed.set_ylim([self.shape[0]-1,1])
-            im3 = rockFluxed.imshow(self.printBox('fluid','age'), cmap='Paired', vmin=0, vmax=self.printBox('fluid','age').max()*1.1)
-            fig.colorbar(im3, ax=rockFluxed, label='fluid age', orientation='horizontal',shrink=.5,pad=.0)
-            rockFluxed.plot(sections[0]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][4])
-            rockFluxed.plot(sections[1]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][1])
-            qui = rockFluxed.streamplot(X, Y, self.u, self.v, density=.5, color='k', linewidth=lw)
-            rockFluxed.grid(None)
-            rockFluxed.axis('off')
-            
-            covarPlot.set_xlim([1,self.shape[1]-1])
-            covarPlot.set_ylim([self.shape[0]-1,1])
-            misfit=(self.printBox('rock','d18o')-self.printBox('rock','d13c')*((2.0--7.0)/(-1.0--6.0))+4.6)
-            #ratio=(2-np.abs(self.printBox('rock','d13c')-2))/(-1-(self.printBox('rock','d18o')+1))
-            #ratio[np.isnan(ratio)]=2.0
-            im4 = covarPlot.imshow(speed*self.xSize, cmap='nipy_spectral_r')
-            fig.colorbar(im4, ax=covarPlot, label='fluid speed (m/yr)', orientation='horizontal',shrink=.5,pad=.0)
-            covarPlot.plot(sections[0]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][4])
-            covarPlot.plot(sections[1]*np.ones(100),np.linspace(0,self.shape[1],100), lw=1.5, color=plt.rcParams['axes.color_cycle'][1])
-            qui = covarPlot.streamplot(X, Y, self.u, self.v, density=.5, color='k', linewidth=lw)
-            covarPlot.grid(None)
-            covarPlot.axis('off')
-            
-            stratPlot.set_xlim([carbonAxes[0], carbonAxes[1]])
-            stratPlot.set_ylim([self.shape[0]-1,1])   
-            stratPlot.set_xlabel('$\delta$13C and $\delta$18O Rock', labelpad=0)
-            stratPlot.set_ylabel('Depth (meters)', labelpad=0)
+            #fluidSpeed.set_xlim([1,self.shape[1]-1])
+            #fluidSpeed.set_ylim([self.shape[0]-1,1])
+            im4 = fluidSpeed.imshow(speed, cmap='jet',aspect='auto',extent=[0,xW,yW,0])
+            fig.colorbar(im4, ax=fluidSpeed, label='fluid speed (m/yr)', orientation='vertical',pad=.0)
+            qui = fluidSpeed.streamplot(X, Y, (self.u), self.v,color='k',linewidth=lw)
+            fluidSpeed.grid(None)
+            fluidSpeed.axis('off')
+                       
+            fluidA=self.printBox('fluid','age')
             rockCarbon=self.printBox('rock','d13c')
             rockOxygen=self.printBox('rock','d18o')
-            strat = stratPlot.plot(rockCarbon[:,sections[0]],np.linspace(0,self.shape[0],len(rockCarbon[:,sections[0]])), color=plt.rcParams['axes.color_cycle'][4], lw=2, label='$\delta$13C')
-            strat2 = stratPlot.plot(rockCarbon[:,sections[1]],np.linspace(0,self.shape[0],len(rockCarbon[:,sections[1]])), color=plt.rcParams['axes.color_cycle'][1],lw=2, label='$\delta$13C')
-            strat3 = stratPlot.plot(rockOxygen[:,sections[0]],np.linspace(0,self.shape[0],len(rockOxygen[:,sections[0]])), color=plt.rcParams['axes.color_cycle'][4], linestyle='--',lw=2, label='$\delta$18O')
-            strat4 = stratPlot.plot(rockOxygen[:,sections[1]],np.linspace(0,self.shape[0],len(rockOxygen[:,sections[1]])), color=plt.rcParams['axes.color_cycle'][1], linestyle='--',lw=2, label='$\delta$18O')
+            fluidCarbon=self.printBox('fluid','d13c')
+            fluidOxygen=self.printBox('fluid','d18o')
             
-            stratPlotCa.set_xlim([calciumAxes[0], calciumAxes[1]])
-            stratPlotCa.set_ylim([self.shape[0]-1,1])     
-            stratPlotCa.set_xlabel('$\delta$44Ca Rock', labelpad=0)
-            stratPlotCa.set_ylabel('Depth (meters)', labelpad=0)
-            rockCalcium=self.printBox('rock','d44ca')
-            strat = stratPlotCa.plot(rockCalcium[:,sections[0]],np.linspace(0,self.shape[0],len(rockCalcium[:,sections[0]])), color=plt.rcParams['axes.color_cycle'][4], lw=2, label='$\delta$44Ca')
-            strat2 = stratPlotCa.plot(rockCalcium[:,sections[1]],np.linspace(0,self.shape[0],len(rockCalcium[:,sections[1]])), color=plt.rcParams['axes.color_cycle'][1], lw=2, label='$\delta$44Ca')
-                        
-            fluidA=self.printBox('fluid','age')
-            crossPlotCO.set_xlim([oxygenAxes[0], oxygenAxes[1]])
-            crossPlotCO.set_ylim([carbonAxes[0], carbonAxes[1]])   
-            crossPlotCO.set_ylabel('$\delta$13C Rock', labelpad=-8)
-            crossPlotCO.set_xlabel('$\delta$18O Rock', labelpad=0)
-            #crossRockCO4 = crossPlotCO.scatter(rockOxygen[:,49],rockCarbon[:,49],color=plt.rcParams['axes.color_cycle'][6], s=15, alpha=.8)            
-            #crossRockCO3 = crossPlotCO.scatter(rockOxygen[:,100],rockCarbon[:,100],color=plt.rcParams['axes.color_cycle'][4], s=15, alpha=.8)
-            crossRockCO2 = crossPlotCO.scatter(rockOxygen,rockCarbon,c=fluidA, cmap='Paired', s=7,alpha=.8,edgecolors='none',vmin=0, vmax=fluidA.max()*1.1)
+            crossPlotCOAge.set_xlim([oxygenAxes[0], oxygenAxes[1]])
+            crossPlotCOAge.set_ylim([carbonAxes[0], carbonAxes[1]])   
+            crossPlotCOAge.set_ylabel('$\delta$13C Rock', labelpad=-8)
+            crossPlotCOAge.set_xlabel('$\delta$18O Rock', labelpad=0)
+            crossRockCO2 = crossPlotCOAge.scatter(rockOxygen,rockCarbon,c=np.log(fluidA), cmap='Paired', s=7,alpha=.8,edgecolors='none')
+
+            crossPlotCOSpeed.set_xlim([oxygenAxes[0], oxygenAxes[1]])
+            crossPlotCOSpeed.set_ylim([carbonAxes[0], carbonAxes[1]])   
+            crossPlotCOSpeed.set_ylabel('$\delta$13C Rock', labelpad=-8)
+            crossPlotCOSpeed.set_xlabel('$\delta$18O Rock', labelpad=0)
+            crossRockCO2 = crossPlotCOSpeed.scatter(rockOxygen,rockCarbon,c=speed, cmap='jet', s=7,alpha=.8,edgecolors='none')
+
+            ageC.set_xlim([0, fluidA.max()*1.1])
+            ageC.set_xlim([carbonAxes[0], carbonAxes[1]])   
+            ageC.set_ylabel('Fluid Age (yr)', labelpad=-8)
+            ageC.set_xlabel('$\delta$13C Rock (O) and Fluid (G)', labelpad=0)
+            rCvAge = ageC.scatter(rockCarbon,fluidA, s=15,alpha=.8, color=plt.rcParams['axes.color_cycle'][4])
+            fCvAge = ageC.scatter(fluidCarbon,fluidA, s=15,alpha=.8, color=plt.rcParams['axes.color_cycle'][5])
+            return fig
             
-            crossPlotCCa.set_xlim([calciumAxes[0], calciumAxes[1]])
-            crossPlotCCa.set_ylim([carbonAxes[0], carbonAxes[1]])
-            crossPlotCCa.set_ylabel('$\delta$13C Rock', labelpad=-8)
-            crossPlotCCa.set_xlabel('$\delta$44Ca Rock', labelpad=0)            
-            crossRockCCa2 = crossPlotCCa.scatter(rockCalcium,rockCarbon,c=fluidA, cmap='Paired', s=7,alpha=.8,edgecolors='none',vmin=0, vmax=fluidA.max()*1.1)
-            
-            crossPlotCaO.set_xlim([calciumAxes[0], calciumAxes[1]])
-            crossPlotCaO.set_ylim([oxygenAxes[0], oxygenAxes[1]])
-            crossPlotCaO.set_ylabel('$\delta$18O Rock', labelpad=-5)
-            crossPlotCaO.set_xlabel('$\delta$44Ca Rock', labelpad=0)            
-            crossRockCaO2 = crossPlotCaO.scatter(rockCalcium,rockOxygen,c=fluidA, cmap='Paired', s=7,alpha=.8,edgecolors='none',vmin=0, vmax=fluidA.max()*1.1)
-            
-            crossPlotCaFlux.set_xlim([calciumAxes[0], calciumAxes[1]])
-            crossPlotCaFlux.set_ylim([0, self.printBox('fluid','age').max()*1.1])
-            rockFluxed=self.printBox('rock','fluxed')
-            crossPlotCaFlux.set_ylabel('Fluid Age', labelpad=-5)
-            crossPlotCaFlux.set_xlabel('$\delta$44Ca Rock', labelpad=0)            
-            crossRockCaFlux = crossPlotCaFlux.scatter(rockCalcium,self.printBox('fluid','age'),color=plt.rcParams['axes.color_cycle'][3], s=1, alpha=.7)
-            crossFluidCaFlux = crossPlotCaFlux.scatter(self.printBox('fluid','d44ca')-.5,self.printBox('fluid','age'),color=plt.rcParams['axes.color_cycle'][1], s=1, alpha=.7)
-          
     def plot(self,phase,parameter):
         phase=getattr(self,phase)
         plt.imshow(np.array(list(reversed(
         [[getattr(phase[j][i],parameter) for j in range(self.shape[0])] for i in range(self.shape[1])]
         ))).T)                       
-                
-#    def printBox(self,phase,parameter):
-#        phase=getattr(self,phase)
-#        return np.array(list((
-#        [[getattr(phase[j][i],parameter) for j in range(self.shape[0])] for i in range(self.shape[1])]
-#        ))).T  
+                  
     
     def printBox(self,phase,parameter):
         phase=getattr(self,phase)
-        cdef int j,i
+        cdef DTYPE_t j,i
         cdef np.ndarray[np.float64_t,ndim=2] box = np.ones((self.shape[0],self.shape[1]))
         for j in xrange(self.shape[0]):
             for i in xrange(self.shape[1]):
@@ -235,32 +190,31 @@ class meshRock:
             
         cdef DTYPE_t j,n,row,column
         cdef np.ndarray[np.float64_t, ndim=2] newFluid, newRock, dRock, dFluid, onesShape
-        #cdef float cX, cXn, R, F, newFluid, newRock, dRock, dFluid, onesShape
-        delta=['d13c','d18o','d44ca','age'] #properties to track
-        boundary=[-7.0,-6.0,-1.0,0.0] #BOUNDARY CONDITIONS
-        massRatio=[[240.0,2.0],[960.0,889.0],[800.0,70.0]]*self.xSize**2 #stiochiometric ratio between elements (r,f) (Ca, 1-37)
+        delta=['d13c','d18o','age'] #properties to track
+        boundary=[-5.0,-5.0,0.0] #BOUNDARY CONDITIONS
+        massRatio=[[240.0,2.0],[960.0,889.0],[800.0,70.0]] #stiochiometric ratio between elements (r,f) (Ca, 1-37)
         alpha=[1.0,1.0,0.9995]
         nt = self.nt 
         nx=self.shape[1]
         ny=self.shape[0]
-        u = self.u
-        v = self.v
+        u = np.abs(self.u)
+        v = np.abs(self.v)
         loops=len(delta)
-        abso=np.abs
         
         for j in xrange(steps):
             def AdvectionStep(delta,boundary): 
-                def timeSavingFunction(cXn, cXi,cYi, v, u): 
-                    return (cXn - v * self.dt/1.0 * (cXn - cYi) - u * self.dt/1.0 * (cXn - cXi))
+                def timeSavingFunction(dt,cXn, cXi,cYi, v, u): 
+                    return (cXn - v * dt/1.0 * (cXn - cYi) - u * dt/1.0 * (cXn - cXi))
  
                 cdef np.ndarray[np.float_t, ndim=3] cX=np.zeros([loops,ny,nx]) 
-                abso=np.abs
+                tStep=self.dt
                 for k in xrange(len(delta)):
                     cX[k][:,:]=self.printBox('fluid',delta[k])    
                     for n in xrange(nt+1): 
-                        cX[k][0:2,:]=boundary[k]  #BOUNDARY CONDITIONS
+                        cX[k][:,0]=boundary[k]
+                        #cX[k][-1,2:-1:2]=boundary[k]#BOUNDARY CONDITIONS
                         cXn = cX[k].copy()
-                        cX[k][1:-1,1:-1]=timeSavingFunction(cXn[1:-1,1:-1],cXn[list(self.IsN[1:-1,1:-1]),list(self.Js[1:-1,1:-1])],cXn[list(self.Is[1:-1,1:-1]),list(self.JsN[1:-1,1:-1])],abso(v[1:-1,1:-1]),abso(u[1:-1,1:-1]))    
+                        cX[k][1:-1,1:-1]=timeSavingFunction(tStep,cXn[1:-1,1:-1],cXn[list(self.IsN[1:-1,1:-1]),list(self.Js[1:-1,1:-1])],cXn[list(self.Is[1:-1,1:-1]),list(self.JsN[1:-1,1:-1])],(v[1:-1,1:-1]),(u[1:-1,1:-1]))    
                 return cX
             
             self.injectionAge=self.injectionAge+1
