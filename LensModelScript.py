@@ -31,27 +31,27 @@ meshX=u.shape[1]
 meshY=u.shape[0]
 injectionSites=np.zeros((meshY,meshX))
 injectionSites=injectionSites>0
-injectionSites[0:3,:]=True
+injectionSites[0:4,:]=True
 
 aveSpeed=np.sqrt(v.mean()**2+u.mean()**2)
-AtR=1e4 #12000 seems good?
+AtR=1e5 #12000 seems good?
 mesh=DiagenesisMesh.meshRock(meshX,meshY,u,v,5,5,-1,aveSpeed/AtR,injectionSites)  
-#mesh.inject(int(200/mesh.dt))
+#mesh.inject(int(3000/mesh.dt))
 #mesh.compPlot()
-
+#
 def aniStep(step):
     mesh.compPlotAni(fig)    
-    mesh.inject(1000)
-
+    mesh.inject(2000)
+##
 fig = plt.figure(figsize=(20, 16))
 ani = animation.FuncAnimation(fig, aniStep, frames=100)
 FFwriter = animation.FFMpegWriter()
-ani.save('LensTest_AtR_1e4.mp4', dpi=300, writer = FFwriter, fps=30, extra_args=['-vcodec', 'libx264'])
-
-fig.savefig('LensTest_AtR_1e4.pdf', format='pdf', dpi=300)
-
+ani.save('LensTest_AtR_1e5.mp4', dpi=300, writer = FFwriter, fps=30, extra_args=['-vcodec', 'libx264'])
+#
+fig.savefig('LensTest_AtR_1e5.pdf', format='pdf', dpi=300)
+#
 def save_object(obj, filename):
     with open(filename, 'wb') as output:
         pickle.dump(obj, output, pickle.HIGHEST_PROTOCOL)
 
-save_object(mesh, '2dFluidLensMesh1e4.pkl')
+save_object(mesh, '2dFluidLensMesh1e5.pkl')
