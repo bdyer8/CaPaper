@@ -199,7 +199,7 @@ class meshRock:
         cdef DTYPE_t j,n,row,column
         cdef np.ndarray[np.float64_t, ndim=2] newFluid, newRock, dRock, dFluid, onesShape
         delta=['d13c','d18o','age'] #properties to track
-        boundary=[-5.0,-5.0,0.0] #BOUNDARY CONDITIONS
+        boundary=[-7.0,-5.0,0.0] #BOUNDARY CONDITIONS
         massRatio=[[240.0,2.0],[960.0,889.0],[800.0,70.0]] #stiochiometric ratio between elements (r,f) (Ca, 1-37)
         alpha=[1.0,1.0,0.9995]
         nt = self.nt 
@@ -214,26 +214,26 @@ class meshRock:
                 def timeSavingFunction(dt,cXn, cXi,cYi, v, u): #march forward euler upwinding
                     return (cXn - v * dt/1.0 * (cXn - cYi) - u * dt/1.0 * (cXn - cXi))
                     
-                def centralDifference(cX,Is,Js,IsN,JsN): #central diff -- higher accuracy, slower, not implemented yet
-                    cXn = cX.copy()  
-                    cX2 = cX.copy()
-                    cX2[1:-1,1:-1]=timeSavingFunction(tStep,cXn[1:-1,1:-1],cXn[IsN[1:-1,1:-1],Js[1:-1,1:-1]],cXn[Is[1:-1,1:-1],JsN[1:-1,1:-1]],v[Is[1:-1,1:-1],JsN[1:-1,1:-1]],u[IsN[1:-1,1:-1],Js[1:-1,1:-1]])
-                    cXn = cX2.copy()
-                    cX3 = cX3.copy()
-                    cX3[1:-1,1:-1]=timeSavingFunction(tStep,cXn[1:-1,1:-1],cXn[IsN[1:-1,1:-1],Js[1:-1,1:-1]],cXn[Is[1:-1,1:-1],JsN[1:-1,1:-1]],v[Is[1:-1,1:-1],JsN[1:-1,1:-1]],u[IsN[1:-1,1:-1],Js[1:-1,1:-1]])
-                    return (cX3+cX2)/2.0
-                
-                def TVDRungeKutta(dt,cXn, cXi,cYi, v, u): #stable and accurate, not yet implemented
-                    cXi1=(cXn - v * dt/1.0 * (cXn - cYi) - u * dt/1.0 * (cXn - cXi))
-                    cXi2=(cXi1 - v * dt/1.0 * (cXi1 - cYi) - u * dt/1.0 * (cXi1 - cXi))
-                    return (cXn - v * dt/1.0 * (cXn - cYi) - u * dt/1.0 * (cXn - cXi))
+#                def centralDifference(cX,Is,Js,IsN,JsN): #central diff -- higher accuracy, slower, not implemented yet
+#                    cXn = cX.copy()  
+#                    cX2 = cX.copy()
+#                    cX2[1:-1,1:-1]=timeSavingFunction(tStep,cXn[1:-1,1:-1],cXn[IsN[1:-1,1:-1],Js[1:-1,1:-1]],cXn[Is[1:-1,1:-1],JsN[1:-1,1:-1]],v[Is[1:-1,1:-1],JsN[1:-1,1:-1]],u[IsN[1:-1,1:-1],Js[1:-1,1:-1]])
+#                    cXn = cX2.copy()
+#                    cX3 = cX3.copy()
+#                    cX3[1:-1,1:-1]=timeSavingFunction(tStep,cXn[1:-1,1:-1],cXn[IsN[1:-1,1:-1],Js[1:-1,1:-1]],cXn[Is[1:-1,1:-1],JsN[1:-1,1:-1]],v[Is[1:-1,1:-1],JsN[1:-1,1:-1]],u[IsN[1:-1,1:-1],Js[1:-1,1:-1]])
+#                    return (cX3+cX2)/2.0
+#                
+#                def TVDRungeKutta(dt,cXn, cXi,cYi, v, u): #stable and accurate, not yet implemented
+#                    cXi1=(cXn - v * dt/1.0 * (cXn - cYi) - u * dt/1.0 * (cXn - cXi))
+#                    cXi2=(cXi1 - v * dt/1.0 * (cXi1 - cYi) - u * dt/1.0 * (cXi1 - cXi))
+#                    return (cXn - v * dt/1.0 * (cXn - cYi) - u * dt/1.0 * (cXn - cXi))
                     
                 cdef np.ndarray[np.float_t, ndim=3] cX=np.zeros([loops,ny,nx]) 
                 tStep=self.dt
                 IS=self.injectionSites
                 for k in xrange(len(delta)):
                     cX[k][:,:]=self.printBox('fluid',delta[k])    
-                    for n in xrange(nt+1): 
+                    for n in xrange(nt): 
                         cX[k][IS]=boundary[k]
                         #cX[k][-1,2:-1:2]=boundary[k]#BOUNDARY CONDITIONS
                         cXn = cX[k].copy()

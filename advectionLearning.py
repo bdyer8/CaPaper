@@ -19,12 +19,14 @@ import DiagenesisMesh
 nt=10000
 dx = 1
 dy = 1
-dt = .01
-meshX=u[:20,:40].shape[1]
-meshY=u[:20,:40].shape[0]
-mesh=DiagenesisMesh.meshRock(meshX,meshY,u[:20,:40],v[:20,:40],5,5,-1,1e-6,[u>0])
+u=load('uConverge.npy')
+v=load('vConverge.npy')
+meshX=u.shape[1]
+meshY=u.shape[0]
+mesh=DiagenesisMesh.meshRock(meshX,meshY,u,v,5,5,-1,1e-6,[u>0])
 u=mesh.u
 v=mesh.v
+dt=.5/(np.abs(u).max()+np.abs(v).max())
 nx=u.shape[1]
 ny=u.shape[0]
 #cX=mesh.printBox('fluid','d13c')
@@ -38,7 +40,7 @@ for i in range(mesh.shape[0]):
         xSign[i,k]=-1*math.copysign(1,u[i,k])
 
 def timeSavingFunction(dt,cXn, cXi,cYi, v, u): #march forward euler upwinding
-                    return (cXn - .5*(v * dt/1.0 * (cXn - cYi) + u * dt/1.0 * (cXn - cXi)))
+                    return (cXn - v * dt/1.0 * (cXn - cYi) - u * dt/1.0 * (cXn - cXi))
 
 def centralDifference(cX,IsN,Js,Is,JsN): #central diff -- higher accuracy, slower, not implemented yet
                     cXn = cX.copy()  
@@ -65,12 +67,17 @@ for i in range(1,ny-1):
  
 #time=time.time
 def anim(cX):
-        for n in range(nt+1): ##loop across number of time steps
-            cX[0,:]=-2.0
-            cXn = cX.copy()
-            cX[1:-1,1:-1]=cX[k][1:-1,1:-1]=timeSavingFunction(dt,cXn[1:-1,1:-1],cXn[list(IsN[1:-1,1:-1]),list(Js[1:-1,1:-1])],cXn[list(Is[1:-1,1:-1]),list(JsN[1:-1,1:-1])],(v[list(Is[1:-1,1:-1]),list(JsN[1:-1,1:-1])]),(u[list(IsN[1:-1,1:-1]),list(Js[1:-1,1:-1])]))    
-                
         
+        for n in range(nt+1): ##loop across number of time steps           
+            cX[20,10]=-2.0
+            cXn = cX.copy()
+            cX[1:-1,1:-1]=timeSavingFunction(dt,cXn[1:-1,1:-1],cXn[list(IsN[1:-1,1:-1]),list(Js[1:-1,1:-1])],cXn[list(Is[1:-1,1:-1]),list(JsN[1:-1,1:-1])],(v[list(Is[1:-1,1:-1]),list(JsN[1:-1,1:-1])]),(u[list(IsN[1:-1,1:-1]),list(Js[1:-1,1:-1])])) 
+            cX[:,1]=cX[:,0]
+            cX[:,-2]=cX[:,-1]
+            cX[1,]=cX[0,:]
+            cX[-2,:]=cX[-1,:]
+            
+       
         fig = plt.figure(figsize=(15, 6))
         gs = gridspec.GridSpec(1,1) 
         ax=plt.subplot(gs[0,0])   
