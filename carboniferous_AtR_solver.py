@@ -52,15 +52,15 @@ meshX=104
 v=np.zeros([meshY,meshX])
 u=np.ones([meshY,meshX])
 aveSpeed=np.sqrt(v.mean()**2+u.mean()**2)
-
-modelData=(ArrowCanyon.d13c[ArrowCanyon.SAMP_HEIGHT<103])
-modelData2=(BattleshipWash.d13c[(((BattleshipWash.SAMP_HEIGHT-240)<103) & ((BattleshipWash.SAMP_HEIGHT-240)>0))])
-modelData=list(modelData)+list(modelData2)
-modelHeight=(ArrowCanyon.SAMP_HEIGHT[ArrowCanyon.SAMP_HEIGHT<103])
-modelHeight2=(BattleshipWash.SAMP_HEIGHT[(((BattleshipWash.SAMP_HEIGHT-240)<103) & ((BattleshipWash.SAMP_HEIGHT-240)>0))]-240.0)
-modelHeight=list(modelHeight)+list(modelHeight2)
-LVData=Leadville.d13c[Leadville.d13c<0]
-LVHeight=Leadville.SAMP_HEIGHT[Leadville.d13c<0]+7
+#
+#modelData=(ArrowCanyon.d13c[ArrowCanyon.SAMP_HEIGHT<103])
+#modelData2=(BattleshipWash.d13c[(((BattleshipWash.SAMP_HEIGHT-240)<103) & ((BattleshipWash.SAMP_HEIGHT-240)>0))])
+#modelData=list(modelData)+list(modelData2)
+#modelHeight=(ArrowCanyon.SAMP_HEIGHT[ArrowCanyon.SAMP_HEIGHT<103])
+#modelHeight2=(BattleshipWash.SAMP_HEIGHT[(((BattleshipWash.SAMP_HEIGHT-240)<103) & ((BattleshipWash.SAMP_HEIGHT-240)>0))]-240.0)
+#modelHeight=list(modelHeight)+list(modelHeight2)
+#LVData=Leadville.d13c[Leadville.d13c<0]
+#LVHeight=Leadville.SAMP_HEIGHT[Leadville.d13c<0]+7
 
 injectionSites=np.zeros([meshY,meshX])
 injectionSites=injectionSites>0
@@ -69,23 +69,23 @@ N=100
 K=20
 rmse=np.zeros((K,N))
 rmse2=np.zeros((K,N))
-mag=np.linspace(4,8.0,K)
-age=10000
+mag=np.linspace(2.5,8.0,K)
+age=500000.0
 meshd13c=np.zeros((K,N,meshX))
 for j in range(K):
-    ACmesh=DiagenesisMesh.meshRock(meshX,meshY,u*.07,v,2,2,-1,aveSpeed/(10**mag[j]),injectionSites) 
+    ACmesh=DiagenesisMesh.meshRock(meshX,meshY,u,v,2,2,-1,aveSpeed/(10**mag[j]),injectionSites) 
     for k in range(N):
-        ACmesh.inject(int(int(age/ACmesh.dt)/N))
+        ACmesh.inject(int(age/N))
         meshd13c[j,k,:]=ACmesh.printBox('rock','d13c')[1,:]
-        rmse[j,k]=calcRMSE(ACmesh.printBox('rock','d13c')[1,1:],np.linspace(meshX-1,0,meshX-1),modelData,modelHeight)
-        rmse2[j,k]=calcRMSE(ACmesh.printBox('rock','d13c')[1,1:],np.linspace(meshX-1,0,meshX-1),LVData,LVHeight)
-with plt.style.context('fivethirtyeight'):
-    fig=plt.figure(figsize=(16, 5))
-    gs = gridspec.GridSpec(1, 2) 
-    ac = plt.subplot(gs[0,0])
-    lv = plt.subplot(gs[0,1])
-    acFig=ac.imshow(rmse,cmap=viridis,interpolation='none',extent=[0,age/(1e6),mag[K-1],mag[0]], aspect='auto'); ac.set_ylabel('Advection to Reaction Ratio (10^N)'); ac.set_xlabel('age of diagenesis (Ma)'); fig.colorbar(acFig, ax=ac, label='rmse', orientation='vertical',pad=.0)
-    lvFig=lv.imshow(rmse2,cmap=viridis,interpolation='none',extent=[0,age/(1e6),mag[K-1],mag[0]], aspect='auto'); lv.set_ylabel('Advection to Reaction Ratio (10^N)'); lv.set_xlabel('age of diagenesis (Ma)'); fig.colorbar(lvFig, ax=lv, label='rmse', orientation='vertical',pad=.0)
+#        rmse[j,k]=calcRMSE(ACmesh.printBox('rock','d13c')[1,1:],np.linspace(meshX-1,0,meshX-1),modelData,modelHeight)
+#        rmse2[j,k]=calcRMSE(ACmesh.printBox('rock','d13c')[1,1:],np.linspace(meshX-1,0,meshX-1),LVData,LVHeight)
+#with plt.style.context('fivethirtyeight'):
+#    fig=plt.figure(figsize=(16, 5))
+#    gs = gridspec.GridSpec(1, 2) 
+#    ac = plt.subplot(gs[0,0])
+#    lv = plt.subplot(gs[0,1])
+#    acFig=ac.imshow(rmse,cmap=viridis,interpolation='none',extent=[0,age/(1e6),mag[K-1],mag[0]], aspect='auto'); ac.set_ylabel('Advection to Reaction Ratio (10^N)'); ac.set_xlabel('age of diagenesis (Ma)'); fig.colorbar(acFig, ax=ac, label='rmse', orientation='vertical',pad=.0)
+#    lvFig=lv.imshow(rmse2,cmap=viridis,interpolation='none',extent=[0,age/(1e6),mag[K-1],mag[0]], aspect='auto'); lv.set_ylabel('Advection to Reaction Ratio (10^N)'); lv.set_xlabel('age of diagenesis (Ma)'); fig.colorbar(lvFig, ax=lv, label='rmse', orientation='vertical',pad=.0)
 
 
 #np.unravel_index(np.argmin(rmse2),rmse2.shape)
@@ -96,7 +96,7 @@ def save_object(obj, filename):
 
 #save_object(rmse, 'ACrmse4ma.pkl')
 #save_object(rmse2, 'LVrmse4ma.pkl')
-#save_object(meshd13c, 'MeshSolutions_testing.pkl')
+save_object(meshd13c, 'MeshSolutions_2.pkl')
 
 #%%  
 
