@@ -198,7 +198,7 @@ class meshRock:
             
         cdef DTYPE_t j,n,row,column
         cdef np.ndarray[np.float64_t, ndim=2] newFluid, newRock, dRock, dFluid, onesShape
-        delta=['d13c','d18o','age'] #properties to track
+        delta=['d13c','d18o','d44ca','age'] #properties to track
         boundary=[-7.0,-5.0,0.0] #BOUNDARY CONDITIONS
         massRatio=[[240.0,2.0],[960.0,889.0],[800.0,70.0]] #stiochiometric ratio between elements (r,f) (Ca, 1-37)
         alpha=[1.0,1.0,0.9995]

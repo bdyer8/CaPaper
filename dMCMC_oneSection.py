@@ -17,9 +17,56 @@ from pymc.Matplot import plot
 import pydot
 
 #%%
+def synthData(a, b, m):
+    idxA=np.abs((a2r-a)).argmin()
+    if a2r[idxA]>a:
+        idxA_2=idxA.copy()
+        idxA=idxA-1
+    else:
+        idxA_2=idxA+1
+    idxT=np.abs((t-b)).argmin()
+    if t[idxT]>b:
+        idxT_2=idxT.copy()
+        idxT=idxT-1
+    else:
+        idxT_2=idxT+1
+    if idxT_2>=100:
+        idxT_2=99
+        idxT=98
+        b=t[-1]
 
-a2r=np.linspace(4,8.0,20) 
-t=np.linspace(0,4e6,100) 
+    highResModel1=interp1d(np.linspace(103,0,104),modelSolutions[idxA,idxT,:])
+    highResModel2=interp1d(np.linspace(103,0,104),modelSolutions[idxA_2,idxT,:])
+    highResModel3=interp1d(np.linspace(103,0,104),modelSolutions[idxA,idxT_2,:])
+    highResModel4=interp1d(np.linspace(103,0,104),modelSolutions[idxA_2,idxT_2,:])    
+    data=np.array([highResModel1(m),highResModel2(m),highResModel3(m),highResModel4(m)]) 
+    points= [(a2r[idxA], t[idxT], 0),
+             (a2r[idxA_2], t[idxT], 0),
+             (a2r[idxA], t[idxT_2], 0),
+             (a2r[idxA_2], t[idxT_2], 0)]
+    a,b,c,d=bilinear_interpolation(a,b,points)
+    return data.T.dot([a,b,c,d]).flatten()
+    
+    
+interp1d=scipy.interpolate.interp1d
+def bilinear_interpolation(x, y, points):
+    
+    points = sorted(points)               # order points by x, then by y
+    (x1, y1, q11), (_x1, y2, q12), (x2, _y1, q21), (_x2, _y2, q22) = points
+
+    if x1 != _x1 or x2 != _x2 or y1 != _y1 or y2 != _y2:
+        raise ValueError('points do not form a rectangle')
+    if not x1 <= x <= x2 or not y1 <= y <= y2:
+        raise ValueError('(x, y) not within the rectangle')
+
+    return  ((x2 - x) * (y2 - y) / ((x2 - x1) * (y2 - y1) + 0.0),
+            (x - x1) * (y2 - y) / ((x2 - x1) * (y2 - y1) + 0.0),
+            (x2 - x) * (y - y1) / ((x2 - x1) * (y2 - y1) + 0.0),
+            (x - x1) * (y - y1) / ((x2 - x1) * (y2 - y1) + 0.0))
+            
+            
+a2r=np.linspace(2.845,6.845,20) 
+t=np.linspace(0,311111,100) 
 h=np.linspace(103,0,104)
 
 
@@ -65,60 +112,68 @@ ACmeters=list(ACmeters)+list(BWmeters)
 SAmeters=np.array(SanAndres.SAMP_HEIGHT[SanAndres.SAMP_HEIGHT>240.1]-240.0)
 SAd13c=np.array(SanAndres.d13c[SanAndres.SAMP_HEIGHT>240.1])
 
-meters=ACmeters
-data=ACd13c
-sectionName='Arrow_Canyon'
+modelSolutions=pickle.load(open('MeshSolutions_4ma.pkl','rb'))
+#generate perfect synthetic data
+AgeSynth=np.random.uniform(1e6,3e6)
+RRSynth=np.random.uniform(1e-7,1e-5)
+velocitiesSynth=np.random.uniform(.001,.01,5)
+testmeters=sorted(np.floor(np.random.uniform(0,103,25)))
+sAR=np.log10(velocitiesSynth[0]/RRSynth)
+sInject=(AgeSynth*velocitiesSynth[0])/.9
+testd13c=synthData(sAR,sInject,np.array(testmeters).astype(int))
+
+
+meters=testmeters
+data=testd13c
+sectionName='Synthetic1'
 
 #initialize pymc stochastic variables
+#velocity = pm.Uniform('velocity',1e-4,1.0)
 err = pm.Uniform("err", 0, 500) #uncertainty on d13c values, flat prior
-A_to_R=pm.Uniform('A_to_R',4.0,8.0)  #Cont uniform for indexes of solution set for A_to_R, or K in the other code (20)
-Time_of_diagenesis=pm.Uniform('Time_of_diagenesis',0,4e6) #Cont uniform for indexes of solution set for A_to_R, or K in the other code (100)
-modelSolutions=pickle.load(open('MeshSolutions_4ma.pkl','rb'))
-Age=pm.Normal('Age',2.5e6,4e-12)
-    
+A_to_R=pm.Uniform('A_to_R',2.845,6.845)  #Cont uniform for indexes of solution set for A_to_R, or K in the other code (20)
+#model_iterations=pm.Uniform('model_iterations',0,311111) #Cont uniform for indexes of solution set for A_to_R, or K in the other code (100)
+Age=pm.Uniform('Age',.1e6,6e6)
+RR=pm.Uniform('RR',1e-9,1e-5)   
 #set pymc observations from data
 metersModel=pm.Normal("meters", 0, 1, value=meters, observed=True)
 
-#model prediction function from model results (should be able to interpolate in 3d to make this continuous)
-interp1d=scipy.interpolate.interp1d
-
-def bilinear_interpolation(x, y, points):
-    
-    points = sorted(points)               # order points by x, then by y
-    (x1, y1, q11), (_x1, y2, q12), (x2, _y1, q21), (_x2, _y2, q22) = points
-
-    if x1 != _x1 or x2 != _x2 or y1 != _y1 or y2 != _y2:
-        raise ValueError('points do not form a rectangle')
-    if not x1 <= x <= x2 or not y1 <= y <= y2:
-        raise ValueError('(x, y) not within the rectangle')
-
-    return  ((x2 - x) * (y2 - y) / ((x2 - x1) * (y2 - y1) + 0.0),
-            (x - x1) * (y2 - y) / ((x2 - x1) * (y2 - y1) + 0.0),
-            (x2 - x) * (y - y1) / ((x2 - x1) * (y2 - y1) + 0.0),
-            (x - x1) * (y - y1) / ((x2 - x1) * (y2 - y1) + 0.0))
-           
-@pm.deterministic
-def velocity(Age=Age, Time_of_diagenesis=Time_of_diagenesis):              
-    return Time_of_diagenesis*(.9/.07)*(.9/Age)  #.07 comes from the scheme i solved with for the model solutions
+#velocity=pm.Uniform('velocity',.00001,(310100*.9/Age))
 
 @pm.deterministic
-def RR(A_to_R=A_to_R, velocity=velocity):              
-    return velocity/(10**A_to_R)
+def velocity(A_to_R=A_to_R, RR=RR):              
+    return RR*(10**A_to_R)
     
 @pm.deterministic
-def predd13c(A_to_R=A_to_R, Time_of_diagenesis=Time_of_diagenesis, metersModel=metersModel):
+def model_iterations(velocity=velocity, Age=Age):              
+    return (Age*velocity)/.9  #.07 comes from the scheme i solved with for the model solutions
+#
+#           
+#@pm.deterministic
+#def velocity(Age=Age, Time_of_diagenesis=Time_of_diagenesis):              
+#    return Time_of_diagenesis*(.9/.07)*(.9/Age)  #.07 comes from the scheme i solved with for the model solutions
+#
+
+
+#model prediction function from model results (should be able to interpolate in 3d to make this continuous)    
+@pm.deterministic
+def predd13c(A_to_R=A_to_R, model_iterations=model_iterations, metersModel=metersModel):
     idxA=np.abs((a2r-A_to_R)).argmin()
     if a2r[idxA]>A_to_R:
         idxA_2=idxA.copy()
         idxA=idxA-1
     else:
         idxA_2=idxA+1
-    idxT=np.abs((t-Time_of_diagenesis)).argmin()
-    if t[idxT]>Time_of_diagenesis:
+    idxT=np.abs((t-model_iterations)).argmin()
+    if t[idxT]>model_iterations:
         idxT_2=idxT.copy()
         idxT=idxT-1
     else:
         idxT_2=idxT+1
+    if idxT_2>=100:
+        idxT_2=99
+        idxT=98
+        model_iterations=t[-1]
+        
     highResModel1=interp1d(np.linspace(103,0,104),modelSolutions[idxA,idxT,:])
     highResModel2=interp1d(np.linspace(103,0,104),modelSolutions[idxA_2,idxT,:])
     highResModel3=interp1d(np.linspace(103,0,104),modelSolutions[idxA,idxT_2,:])
@@ -128,14 +183,14 @@ def predd13c(A_to_R=A_to_R, Time_of_diagenesis=Time_of_diagenesis, metersModel=m
              (a2r[idxA_2], t[idxT], 0),
              (a2r[idxA], t[idxT_2], 0),
              (a2r[idxA_2], t[idxT_2], 0)]
-    a,b,c,d=bilinear_interpolation(A_to_R,Time_of_diagenesis,points)
+    a,b,c,d=bilinear_interpolation(A_to_R,model_iterations,points)
     return data.T.dot([a,b,c,d]).flatten()
     
     
 obs = pm.Normal("obs", predd13c, err, value=data, observed=True)
    
 #set up pymc model with all variables, observations, and deterministics
-model = pm.Model([predd13c, err, obs, Age, RR, velocity, metersModel, A_to_R, Time_of_diagenesis])
+model = pm.Model([predd13c, err, obs, metersModel, A_to_R, velocity, RR, model_iterations])
 
 mcmc=pm.MCMC(model,db='pickle', dbname=(sectionName+'diagenesis.pickle'))
 
@@ -159,23 +214,23 @@ with plt.style.context('ggplot'):
     width = 1.0 * (bins[1] - bins[0])    
     center = (bins[:-1] + bins[1:]) / 2
     timeofd.bar(center, unity_density, align='center', width=width,edgecolor='none',alpha=.7)
-    timeofd.set_xlabel('Recharge Rate (m/yr)')
+    timeofd.set_xlabel('Vertical Velocity (m/yr)')
     timeofd.set_ylabel('Probability')
-    
-    hist, bins = np.histogram(mcmc.trace('A_to_R')[:],100,normed=True, density=True)
-    unity_density = hist / hist.sum()
-    width = 1.0 * (bins[1] - bins[0])    
-    center = (bins[:-1] + bins[1:]) / 2
-    ator.bar(center, unity_density, align='center', width=width, edgecolor='none',alpha=.7)
-    ator.set_xlabel('Ratio of Advection to Reaction Rate 10^N')
-    ator.set_ylabel('Probability')
     
     hist, bins = np.histogram(mcmc.trace('RR')[:]*1e6,100,normed=True, density=True)
     unity_density = hist / hist.sum()
     width = 1.0 * (bins[1] - bins[0])    
     center = (bins[:-1] + bins[1:]) / 2
+    ator.bar(center, unity_density, align='center', width=width, edgecolor='none',alpha=.7)
+    ator.set_xlabel('% Rock Reacted per Ma')
+    ator.set_ylabel('Probability')
+    
+    hist, bins = np.histogram(mcmc.trace('Age')[:]/1e6,100,normed=True, density=True)
+    unity_density = hist / hist.sum()
+    width = 1.0 * (bins[1] - bins[0])    
+    center = (bins[:-1] + bins[1:]) / 2
     RRate.bar(center, unity_density, align='center', width=width, edgecolor='none',alpha=.7)
-    RRate.set_xlabel('% Reacted in 1e6 years')
+    RRate.set_xlabel('Duration of Diagenesis (Ma)')
     RRate.set_ylabel('Probability')
     
     
