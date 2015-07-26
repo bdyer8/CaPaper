@@ -89,7 +89,8 @@ modelSolutions=pickle.load(open('MeshSolutions_2_5to8_0_500k.pkl','rb'))
 
 
 def predFunct(A_to_R, model_iterations, metersModel):
-
+    if model_iterations<0:
+        model_iterations=0
     idxA=np.abs((a2r-A_to_R)).argmin()
     if a2r[idxA]>A_to_R:
         idxA_2=idxA.copy()
@@ -128,8 +129,8 @@ def predFunct(A_to_R, model_iterations, metersModel):
 
 #initialize pymc stochastic variables
 
-N=7
-names=['AC','LV1','LV2','B503','B402','B211','SA']
+N=6
+names=['AC','LV1','LV2','B503','B211','SA']
 err1 = pm.Uniform("err1", 0, 500) #uncertainty on d13c values, flat prior
 err2 = pm.Uniform("err2", 0, 500) #uncertainty on d13c values, flat prior
 err3 = pm.Uniform("err3", 0, 500) #uncertainty on d13c values, flat prior
@@ -137,8 +138,14 @@ err4 = pm.Uniform("err4", 0, 500) #uncertainty on d13c values, flat prior
 err5 = pm.Uniform("err5", 0, 500) #uncertainty on d13c values, flat prior
 err6 = pm.Uniform("err6", 0, 500) #uncertainty on d13c values, flat prior
 err7 = pm.Uniform("err7", 0, 500) #uncertainty on d13c values, flat prior
-Age=pm.Normal('Age',2.5e6,2e-12)
-RR=pm.Uniform('RR',1e-8,1e-5) 
+Age1=pm.Normal('Age1',2.5e6,4e-12)
+Age2=pm.Uniform('Age2',.1e6,40e6)
+Age3=Age2
+Age4=pm.Uniform('Age4',.1e6,40e6)
+Age5=pm.Uniform('Age5',.1e6,40e6)
+Age6=pm.Uniform('Age6',.1e6,40e6)
+Age7=pm.Uniform('Age7',.1e6,40e6)
+RR=pm.Normal('RR',3.5703864479316496e-07,68683619419949.766,value=3.5703864479316496e-07,observed=True) 
 
 AR1=pm.Uniform('ACAR',2.5,8.0)
 AR2=pm.Uniform('LV1AR',2.5,8.0)
@@ -160,46 +167,46 @@ heights7=pm.Normal("SAmeters", 0, 100, value=SAmeters, observed=True)
 
 @pm.deterministic
 def velocity1(AR=AR1, RR=RR):              
-    return RR*(10**AR)
+    return np.abs(RR)*(10**AR)
 @pm.deterministic
 def velocity2(AR=AR2, RR=RR):              
-    return RR*(10**AR)
+    return np.abs(RR)*(10**AR)
 @pm.deterministic
 def velocity3(AR=AR3, RR=RR):              
-    return RR*(10**AR)
+    return np.abs(RR)*(10**AR)
 @pm.deterministic
 def velocity4(AR=AR4, RR=RR):              
-    return RR*(10**AR)
+    return np.abs(RR)*(10**AR)
 @pm.deterministic
 def velocity5(AR=AR5, RR=RR):              
-    return RR*(10**AR)
+    return np.abs(RR)*(10**AR)
 @pm.deterministic
 def velocity6(AR=AR6, RR=RR):              
-    return RR*(10**AR)
+    return np.abs(RR)*(10**AR)
 @pm.deterministic
 def velocity7(AR=AR7, RR=RR):              
-    return RR*(10**AR)
+    return np.abs(RR)*(10**AR)
 
 @pm.deterministic
-def model_iterations1(V=velocity1, Age=Age):              
+def model_iterations1(V=velocity1, Age=Age1):              
     return (Age*V)/.9  #.07 comes from the scheme i solved with for the model solutions
 @pm.deterministic
-def model_iterations2(V=velocity2, Age=Age):              
+def model_iterations2(V=velocity2, Age=Age2):              
     return (Age*V)/.9  #.07 comes from the scheme i solved with for the model solutions
 @pm.deterministic
-def model_iterations3(V=velocity3, Age=Age):              
+def model_iterations3(V=velocity3, Age=Age3):              
     return (Age*V)/.9  #.07 comes from the scheme i solved with for the model solutions
 @pm.deterministic
-def model_iterations4(V=velocity4, Age=Age):              
+def model_iterations4(V=velocity4, Age=Age4):              
     return (Age*V)/.9  #.07 comes from the scheme i solved with for the model solutions
 @pm.deterministic
-def model_iterations5(V=velocity5, Age=Age):              
+def model_iterations5(V=velocity5, Age=Age5):              
     return (Age*V)/.9  #.07 comes from the scheme i solved with for the model solutions
 @pm.deterministic
-def model_iterations6(V=velocity6, Age=Age):              
+def model_iterations6(V=velocity6, Age=Age6):              
     return (Age*V)/.9  #.07 comes from the scheme i solved with for the model solutions
 @pm.deterministic
-def model_iterations7(V=velocity7, Age=Age):              
+def model_iterations7(V=velocity7, Age=Age7):              
     return (Age*V)/.9  #.07 comes from the scheme i solved with for the model solutions
 
 @pm.deterministic
@@ -235,13 +242,13 @@ obs7 = pm.Normal("SAd13c", predSAd13c, err7, value=SAd13c, observed=True)
 
    
 #set up pymc model with all variables, observations, and deterministics
-model = pm.Model([Age,RR,err1,err2,err3,err4,err5,err6,err7,
-                  predACd13c,predLV1d13c,predLV2d13c,predB503d13c,predB402d13c,predB211d13c,predSAd13c,
-                  obs1,obs2,obs3,obs4,obs5,obs6,obs7,
-                  heights1,heights2,heights3,heights4,heights5,heights6,heights7, 
-                  AR1,AR2,AR3,AR4,AR5,AR6,AR7,
-                  velocity1,velocity2,velocity3,velocity4,velocity5,velocity6,velocity7,
-                  model_iterations1,model_iterations2,model_iterations3,model_iterations4,model_iterations5,model_iterations6,model_iterations7])
+model = pm.Model([Age1,Age2,Age3,Age4,Age6,Age7,RR,err1,err2,err3,err4,err5,err6,err7,
+                  predACd13c,predLV1d13c,predLV2d13c,predB503d13c,predB211d13c,predSAd13c,
+                  obs1,obs2,obs3,obs4,obs6,obs7,
+                  heights1,heights2,heights3,heights4,heights6,heights7, 
+                  AR1,AR2,AR3,AR4,AR6,AR7,
+                  velocity1,velocity2,velocity3,velocity4,velocity6,velocity7,
+                  model_iterations1,model_iterations2,model_iterations3,model_iterations4,model_iterations6,model_iterations7])
 
 #model = pm.Model([Age,RR,err1,err2,err3,err6,
 #                  predACd13c,predLV1d13c,predLV2d13c,predB211d13c,
@@ -256,11 +263,11 @@ model = pm.Model([Age,RR,err1,err2,err3,err4,err5,err6,err7,
 
 map_start=pm.MAP(model)
 map_start.fit()
-#mcmc=pm.MCMC(model,db='pickle', dbname=('7Sections_Diagenesis_4.pickle'))
-mcmc=pm.MCMC(model)
-mcmc.use_step_method(pm.Metropolis, Age, proposal_distribution='Normal', proposal_sd=.5e6)
+mcmc=pm.MCMC(model,db='pickle', dbname=('6Sections_Diagenesis_ACFIT.pickle'))
+#mcmc=pm.MCMC(model)
+#mcmc.use_step_method(pm.Metropolis, Age, proposal_distribution='Normal', proposal_sd=.5e6)
 #mcmc.use_step_method(pm.AdaptiveMetropolis, [RR,Age],delay=20000,interval=20000,shrink_if_necessary=True)
-#mcmc.use_step_method(pm.AdaptiveMetropolis, [AR1,AR2,AR3,AR4,AR5,AR6,AR7])
+#mcmc.use_step_method(pm.AdaptiveMetropolis, [Age2,AR2])
 
 
 #mcmc.use_step_method(pm.AdaptiveMetropolis, [RR])
@@ -270,10 +277,10 @@ mcmc.sample(100000,0,100) #N, burn, thin
 
 
 #%%
-N=7
-bandwidth=.25
-extraburn=200000
-thin=5
+N=6
+bandwidth=.1
+extraburn=0
+thin=1
 with plt.style.context('fivethirtyeight'):
     
     rcParams.update({'figure.autolayout': True})
@@ -295,13 +302,12 @@ with plt.style.context('fivethirtyeight'):
     
     fig=plt.figure(figsize=(16, 5.5))
     gs = gridspec.GridSpec(3, 1*N+2) 
-    allData=[[ACd13c],[LV1d13c],[LV2d13c],[B503d13c],[B402d13c],[B211d13c],[SAd13c]]
-    allHeights=[[ACmeters],[LV1meters],[LV2meters],[B503meters],[B402meters],[B211meters],[SAmeters]]
+    allData=[[ACd13c],[LV1d13c],[LV2d13c],[B503d13c],[B211d13c],[SAd13c]]
+    allHeights=[[ACmeters],[LV1meters],[LV2meters],[B503meters],[B211meters],[SAmeters]]
     fits_50=[[np.array(sorted(np.percentile(mcmc.trace('predACd13c')[extraburn::thin,:],50,axis=0),reverse=True))],
               [np.array(sorted(np.percentile(mcmc.trace('predLV1d13c')[extraburn::thin,:],50,axis=0),reverse=True))],
                [np.array(sorted(np.percentile(mcmc.trace('predLV2d13c')[extraburn::thin,:],50,axis=0),reverse=True))],
                 [np.array(sorted(np.percentile(mcmc.trace('predB503d13c')[extraburn::thin,:],50,axis=0),reverse=True))],
-                 [np.array(sorted(np.percentile(mcmc.trace('predB402d13c')[extraburn::thin,:],50,axis=0),reverse=True))],
                   [np.array(sorted(np.percentile(mcmc.trace('predB211d13c')[extraburn::thin,:],50,axis=0),reverse=True))],
                    [np.array(sorted(np.percentile(mcmc.trace('predSAd13c')[extraburn::thin,:],50,axis=0),reverse=True))]]
                    
@@ -311,7 +317,6 @@ with plt.style.context('fivethirtyeight'):
               [np.array(sorted(np.percentile(mcmc.trace('predLV1d13c')[extraburn::thin,:],2.5,axis=0),reverse=True))],
                [np.array(sorted(np.percentile(mcmc.trace('predLV2d13c')[extraburn::thin,:],2.5,axis=0),reverse=True))],
                 [np.array(sorted(np.percentile(mcmc.trace('predB503d13c')[extraburn::thin,:],2.5,axis=0),reverse=True))],
-                 [np.array(sorted(np.percentile(mcmc.trace('predB402d13c')[extraburn::thin,:],2.5,axis=0),reverse=True))],
                   [np.array(sorted(np.percentile(mcmc.trace('predB211d13c')[extraburn::thin,:],2.5,axis=0),reverse=True))],
                    [np.array(sorted(np.percentile(mcmc.trace('predSAd13c')[extraburn::thin,:],2.5,axis=0),reverse=True))]]     
      
@@ -319,7 +324,6 @@ with plt.style.context('fivethirtyeight'):
               [np.array(sorted(np.percentile(mcmc.trace('predLV1d13c')[extraburn::thin,:],97.5,axis=0),reverse=True))],
                [np.array(sorted(np.percentile(mcmc.trace('predLV2d13c')[extraburn::thin,:],97.5,axis=0),reverse=True))],
                 [np.array(sorted(np.percentile(mcmc.trace('predB503d13c')[extraburn::thin,:],97.5,axis=0),reverse=True))],
-                 [np.array(sorted(np.percentile(mcmc.trace('predB402d13c')[extraburn::thin,:],97.5,axis=0),reverse=True))],
                   [np.array(sorted(np.percentile(mcmc.trace('predB211d13c')[extraburn::thin,:],97.5,axis=0),reverse=True))],
                    [np.array(sorted(np.percentile(mcmc.trace('predSAd13c')[extraburn::thin,:],97.5,axis=0),reverse=True))]]    
                   
@@ -328,7 +332,6 @@ with plt.style.context('fivethirtyeight'):
                  [np.sort(heights2.value)],
                  [np.sort(heights3.value)],
                   [np.sort(heights4.value)],
-                   [np.sort(heights5.value)],
                  [np.sort(heights6.value)],
                   [np.sort(heights7.value)]]
     
@@ -338,20 +341,20 @@ with plt.style.context('fivethirtyeight'):
 
         timeofd = plt.subplot(gs[2,i])
         strat = plt.subplot(gs[:2,i])
-        numbers=[1,2,3,4,5,6,7]
+        numbers=[1,2,3,4,6,7]
         density = scipy.stats.gaussian_kde(mcmc.trace('velocity'+str(numbers[i]))[extraburn::thin])
-        xs = np.linspace(0,mcmc.trace('velocity'+str(numbers[i]))[extraburn::thin].max(),1000)
+        xs = np.linspace(mcmc.trace('velocity'+str(numbers[i]))[extraburn::thin].min(),mcmc.trace('velocity'+str(numbers[i]))[extraburn::thin].max()*.95,1000)
         density.covariance_factor = lambda : bandwidth
         density._compute_covariance()
         timeofd.plot(xs,density(xs)/np.trapz(density(xs)),color=plt.rcParams['axes.color_cycle'][i],lw=3)
         timeofd.set_xlabel('Velocity (m yr$^{-1}$)')
-        timeofd.ticklabel_format(axis='x', style='sci', scilimits=(-1,2))
+        timeofd.ticklabel_format(axis='x', style='sci', scilimits=(0,2))
+        timeofd.locator_params(axis = 'x',nbins=4)
         timeofd.set_ylabel('Probability')
         
-        xmax=[150,500,500,150,300]
-        #timeofd.set_xlim([0,xmax[i]])
-        timeofd.locator_params(axis = 'x',nbins=4)
         timeofd.set_ylim([0,.015])
+        if i==5:
+            timeofd.set_xlim([0,.05])
          
         strat.plot(np.array(fits_50[i][0]),np.array(heights_50[i][0]),color='#6c71c4',lw=2)
         strat.plot(np.array(fits_2_5[i][0]),np.array(heights_50[i][0]),color='#6c71c4',lw=2,alpha=.3) 
@@ -360,12 +363,12 @@ with plt.style.context('fivethirtyeight'):
         strat.set_xlabel('$\delta^{13}$C')
         strat.set_ylabel('Meters')
         strat.set_title(names[i])
-        strat.set_xlim([-8,3])
+        strat.set_xlim([-8,4])
         strat.set_ylim([0,120])
         
-    ator = plt.subplot(gs[1,-2])
-    RRate = plt.subplot(gs[2,-2]) 
-    errPlot = plt.subplot(gs[0,-2:]) 
+    #ator = plt.subplot(gs[1,-2])
+    RRate = plt.subplot(gs[2,-2:]) 
+    errPlot = plt.subplot(gs[1,-2:]) 
     #    
     #    density = scipy.stats.gaussian_kde(np.sqrt(1/mcmc.trace('err')[extraburn:]))
     #    xs = np.linspace(0,np.sqrt(1/mcmc.trace('err')[extraburn:]).max(),200)
@@ -378,7 +381,7 @@ with plt.style.context('fivethirtyeight'):
     #    #errPlot.set_xlim([0,1])
     
     for k in range(N):
-        numbers=[1,2,3,4,5,6,7]
+        numbers=[1,2,3,4,6,7]
         density = scipy.stats.gaussian_kde(np.sqrt(1/mcmc.trace('err'+str(numbers[k]))[extraburn::thin]))
         xs = np.linspace(0,np.sqrt(1/(mcmc.trace('err'+str(numbers[k]))[extraburn::thin])).max(),200)
         density.covariance_factor = lambda : bandwidth
@@ -386,76 +389,88 @@ with plt.style.context('fivethirtyeight'):
         errPlot.plot(xs,density(xs)/np.trapz(density(xs)),color=plt.rcParams['axes.color_cycle'][k],lw=2)
         errPlot.set_xlabel('$\sigma$ error')
         errPlot.set_ylabel('Probability')
+        
+        numbers=[1,2,2,4,6,7]
+        density = scipy.stats.gaussian_kde((mcmc.trace('Age'+str(numbers[k]))[extraburn::thin]/1e6))
+        xs = np.linspace(0,((mcmc.trace('Age'+str(numbers[k]))[extraburn::thin])/1e6).max(),200)
+        density.covariance_factor = lambda : bandwidth
+        density._compute_covariance()
+        RRate.plot(xs,density(xs)/np.trapz(density(xs)),color=plt.rcParams['axes.color_cycle'][k],lw=2)
+        RRate.ticklabel_format(axis='x', style='sci', scilimits=(-2,2))
+        RRate.locator_params(axis = 'x',nbins=5)
+        RRate.set_xlabel('Duration of Diagenesis (Ma)')
+        RRate.set_ylabel('Probability')
+        RRate.set_xlim([0,10])
         #errPlot.set_ylim([0,(density(xs)/np.trapz(density(xs))).max()*1.1])
     
     
-    density = scipy.stats.gaussian_kde(mcmc.trace('RR')[extraburn::thin])
-    xs = np.linspace(0,(mcmc.trace('RR')[extraburn::thin]).max()*1.1,200)
-    rrDensity=density
-    rrxs=xs
-    density.covariance_factor = lambda : bandwidth
-    density._compute_covariance()
-    ator.plot(xs,density(xs)/np.trapz(density(xs)),color='#6c71c4',lw=3)
-    ator.set_xlabel('Reaction Rate yr$^{-1}$')
-    ator.set_ylabel('Probability')
-    ator.ticklabel_format(axis='x', style='sci', scilimits=(-2,2))
-    ator.locator_params(axis = 'x',nbins=4)
-    #ator.set_xlim([0,2e1])
-    ator.set_ylim([0,(density(xs)/np.trapz(density(xs))).max()*1.1])
+#    density = scipy.stats.gaussian_kde(mcmc.trace('RR')[extraburn::thin])
+#    xs = np.linspace(0,(mcmc.trace('RR')[extraburn::thin]).max()*1.1,200)
+#    rrDensity=density
+#    rrxs=xs
+#    density.covariance_factor = lambda : bandwidth
+#    density._compute_covariance()
+#    ator.plot(xs,density(xs)/np.trapz(density(xs)),color='#6c71c4',lw=3)
+#    ator.set_xlabel('Reaction Rate yr$^{-1}$')
+#    ator.set_ylabel('Probability')
+#    ator.ticklabel_format(axis='x', style='sci', scilimits=(-2,2))
+#    ator.locator_params(axis = 'x',nbins=4)
+#    #ator.set_xlim([0,2e1])
+#    ator.set_ylim([0,(density(xs)/np.trapz(density(xs))).max()*1.1])
     
     
-    density = scipy.stats.gaussian_kde(mcmc.trace('Age')[extraburn::thin])
-    xs = np.linspace(0,mcmc.trace('Age')[extraburn::thin].max()*1.1,200)
-    ageDensity=density
-    agexs=xs
-    density.covariance_factor = lambda : bandwidth
-    density._compute_covariance()
-    RRate.plot(xs,density(xs)/np.trapz(density(xs)),color='#6c71c4',lw=3)
-    RRate.set_xlabel('Duration (yr)')
-    RRate.set_ylabel('Probability')
-    RRate.ticklabel_format(axis='x', style='sci', scilimits=(-2,2))
-    RRate.locator_params(axis = 'x',nbins=4)
+#    density = scipy.stats.gaussian_kde(mcmc.trace('Age')[extraburn::thin])
+#    xs = np.linspace(0,mcmc.trace('Age')[extraburn::thin].max()*1.1,200)
+#    ageDensity=density
+#    agexs=xs
+#    density.covariance_factor = lambda : bandwidth
+#    density._compute_covariance()
+#    RRate.plot(xs,density(xs)/np.trapz(density(xs)),color='#6c71c4',lw=3)
+#    RRate.set_xlabel('Duration (yr)')
+#    RRate.set_ylabel('Probability')
+#    RRate.ticklabel_format(axis='x', style='sci', scilimits=(-2,2))
+#    RRate.locator_params(axis = 'x',nbins=4)
     #RRate.set_xlim([0,2.0])  
-    RRate.set_ylim([0,(density(xs)/np.trapz(density(xs))).max()*1.1])  
+    #RRate.set_ylim([0,(density(xs)/np.trapz(density(xs))).max()*1.1])  
     
-    atorP = plt.subplot(gs[1,-1])
-    xs = np.linspace(1e-8,1e-5,200)
-    atorP.plot(xs,np.ones(200)*.006,color='#cb4b16',lw=3)
-    atorP.set_xlabel('Reaction Rate yr$^{-1}$')
-    atorP.set_ylabel('Probability')
-    atorP.set_title('Priors')
-    atorP.ticklabel_format(axis='x', style='sci', scilimits=(-2,2))
-    atorP.locator_params(axis = 'x',nbins=4)
-    atorP.plot(rrxs,rrDensity(rrxs)/np.trapz(rrDensity(rrxs)),color='#6c71c4',lw=2)
-    atorP.set_xlim([1e-8,1e-5])  
-    atorP.set_ylim([0,.05])  
+#    atorP = plt.subplot(gs[1,-1])
+#    xs = np.linspace(1e-8,1e-5,200)
+#    atorP.plot(xs,np.ones(200)*.006,color='#cb4b16',lw=3)
+#    atorP.set_xlabel('Reaction Rate yr$^{-1}$')
+#    atorP.set_ylabel('Probability')
+#    atorP.set_title('Priors')
+#    atorP.ticklabel_format(axis='x', style='sci', scilimits=(-2,2))
+#    atorP.locator_params(axis = 'x',nbins=4)
+#    atorP.plot(rrxs,rrDensity(rrxs)/np.trapz(rrDensity(rrxs)),color='#6c71c4',lw=2)
+#    atorP.set_xlim([1e-8,1e-5])  
+#    atorP.set_ylim([0,.05])  
     
-    RRateP = plt.subplot(gs[2,-1]) 
-    density = scipy.stats.gaussian_kde(np.random.normal(2.5e6,.5e6,10000))
-    xs = np.linspace(.1,5e6,200)
-    density.covariance_factor = lambda : .5    
-    density._compute_covariance()
-    RRateP.plot(xs,density(xs)/np.trapz(density(xs)),color='#cb4b16',lw=3)
-    RRateP.set_xlabel('Duration (yr)')
-    RRateP.set_ylabel('Probability')
-    RRateP.ticklabel_format(axis='x', style='sci', scilimits=(-2,2))
-    RRateP.plot(agexs,ageDensity(agexs)/np.trapz(ageDensity(agexs)),color='#6c71c4',lw=2)
-    RRateP.locator_params(axis = 'x',nbins=4)
-    RRateP.set_xlim([0,5e6])  
-    RRateP.set_ylim([0,(density(xs)/np.trapz(density(xs))).max()*1.5])  
+#    RRateP = plt.subplot(gs[2,-1]) 
+#    density = scipy.stats.gaussian_kde(np.random.normal(2.5e6,.5e6,10000))
+#    xs = np.linspace(.1,5e6,200)
+#    density.covariance_factor = lambda : .5    
+#    density._compute_covariance()
+#    RRateP.plot(xs,density(xs)/np.trapz(density(xs)),color='#cb4b16',lw=3)
+#    RRateP.set_xlabel('Duration (yr)')
+#    RRateP.set_ylabel('Probability')
+#    RRateP.ticklabel_format(axis='x', style='sci', scilimits=(-2,2))
+#    RRateP.plot(agexs,ageDensity(agexs)/np.trapz(ageDensity(agexs)),color='#6c71c4',lw=2)
+#    RRateP.locator_params(axis = 'x',nbins=4)
+#    RRateP.set_xlim([0,5e6])  
+#    RRateP.set_ylim([0,(density(xs)/np.trapz(density(xs))).max()*1.5])  
 
 
 #errPlotP = plt.subplot(gs[0,-1]) 
 
 
 #    
-fig.savefig(('7SectionsData_tset.pdf'), format='pdf', dpi=300)  
+fig.savefig(('6SectionsData_tset_ACSET.pdf'), format='pdf', dpi=300)  
 #
 #
 #
 #
 #
-mcmc.db.close()
+#mcmc.db.close()
 
 #db = pymc.database.pickle.load('Disaster.pickle')
 
@@ -472,16 +487,16 @@ def tracePlot(mcmc,extraburn=0,thin=1):
         rcParams.update({'figure.subplot.right': 1.0})
         rcParams.update({'figure.subplot.top': 1.0})
         rcParams.update({'figure.subplot.wspace': 0.0})
-        fig=plt.figure(figsize=(16, 12.5))
-        gs = gridspec.GridSpec(8,2)
-        listTraces=[['RR','Age','ACAR','LV1AR','LV2AR','B211AR','B503AR','B402AR'],['SAAR','err1','err2','err3','err4','err5','err6','err7']]
-        for k in range(8):
-            for i in range(2):
+        fig=plt.figure(figsize=(21, 10.5))
+        gs = gridspec.GridSpec(6,3)
+        listTraces=[['Age1','Age2','Age2','Age4','Age6','Age7'],['ACAR','LV1AR','LV2AR','B211AR','B503AR','SAAR'],['err1','err2','err3','err4','err6','err7']]
+        for k in range(6):
+            for i in range(3):
                 tracePlot=plt.subplot(gs[k,i])
                 trace=mcmc.trace(listTraces[i][k])[extraburn::thin]
                 tracePlot.plot(range(trace.size),trace,lw=1)
                 tracePlot.set_title(listTraces[i][k])
-        fig.savefig(('7SectionsData_tset_traceFig.pdf'), format='pdf', dpi=300)  
+        fig.savefig(('6SectionsData_tset_traceFig_ACSET.pdf'), format='pdf', dpi=300)  
         
 #%%
 variables=['velocity1','velocity2','velocity3','velocity6','velocity7','Age','RR','err1']

@@ -210,19 +210,86 @@ def calcRMSE(modelData,modelHeight,sampData,sampHeights):
     
     
 #%%
+    import DiagenesisMesh
+import scipy.integrate as integrate
+import matplotlib.pyplot as plt
+import numpy as np
+import matplotlib
+from numpy import load,linspace,meshgrid
+from matplotlib import animation
+from pylab import rcParams
+from matplotlib import gridspec
+import pickle
+from matplotlib import rcParams
+import pandas as pd
+import time
+from matplotlib.colors import LinearSegmentedColormap
+cm_data = pickle.load( open( "viridis.pkl", "rb" ) )
+viridis = LinearSegmentedColormap.from_list('viridis', np.flipud(cm_data))
+ArrowCanyon=pd.read_csv('samples_ArrowCanyon.csv')
+Leadville=pd.read_csv('samples_B416.csv')
+BattleshipWash=pd.read_csv('samples_BattleshipWash.csv')
+#%%
     
 meshY=3
 meshX=104
 v=np.zeros([meshY,meshX])*0.0
-u=np.ones([meshY,meshX])*.005
+u=np.ones([meshY,meshX])*.006
 aveSpeed=np.sqrt(v.mean()**2+u.mean()**2)
 injectionSites=np.zeros([meshY,meshX])
 injectionSites=injectionSites>0
 injectionSites[:,0]=True  
-mesh=DiagenesisMesh.meshRock(meshX,meshY,u,v,2,2,-1,.6e-6,injectionSites) 
+mesh=DiagenesisMesh.meshRock(meshX,meshY,u,v,2,2,-1,1e-6,injectionSites) 
 #mesh.inject(int(1.1e6/mesh.dt))
 
 #%%
-plt.scatter(mesh.printBox('rock','d13c')[1,:],range(104,0,-1),c=mesh.printBox('rock','d44ca')[1,:], cmap='jet')
-plt.plot(ArrowCanyon.d13c,ArrowCanyon.SAMP_HEIGHT,linestyle='none',marker='o',markersize=5)
-
+frames=100
+def aniStep(step):   
+    mesh.inject(int(1.1e6/mesh.dt/frames))
+    with plt.style.context('fivethirtyeight'):
+        rcParams.update({'figure.autolayout': True})
+        
+        gs = gridspec.GridSpec(2, 2) 
+        AC = plt.subplot(gs[:,0])
+        #BW = plt.subplot(gs[:,3:])
+        AC.scatter(ArrowCanyon.d13c,ArrowCanyon.SAMP_HEIGHT,s=10,color=[.7,.7,.7],edgecolor='none')
+        AC.set_xlabel('$\delta$13C')
+        AC.set_ylabel('height(m)')
+        AC.set_ylim([0,120])
+        AC.set_xlim([-10,6])
+        BattleshipWash.d44ca=BattleshipWash.d44ca[BattleshipWash.d44ca<-.9]
+        cmin=round(np.min([ArrowCanyon.d44ca.min(),BattleshipWash.d44ca.min()]),1)
+        cmax=round(np.max([ArrowCanyon.d44ca.max(),BattleshipWash.d44ca.max()]),1)
+        specCM=plt.get_cmap('Spectral') 
+        minCa=-1.4
+        rangeCa=.4
+        for i in range(meshX-1):
+            avCa=np.mean(mesh.printBox('rock','d44ca')[1,i:i+2])
+            AC.plot(mesh.printBox('rock','d13c')[1,i:i+2],np.linspace(meshX-(i-1),meshX-i,2),color=specCM(np.abs(minCa-avCa)/rangeCa))
+        AC.scatter(BattleshipWash.d13c,BattleshipWash.SAMP_HEIGHT-240.0,s=10,color=[.7,.7,.7],edgecolor='none')
+        cmax=-1.0
+        d44ca=AC.scatter(ArrowCanyon.d13c,ArrowCanyon.SAMP_HEIGHT,c=ArrowCanyon.d44ca,cmap='Spectral',vmin=cmin,vmax=cmax,s=25,edgecolor=[.2,.2,.2])
+        cbar=fig.colorbar(d44ca,ax=AC,label='$\delta$44Ca', orientation='vertical',pad=.05,shrink=.4,ticks=[ round(a, 1) for a in np.linspace(cmin,cmax,7)])
+        d44ca=AC.scatter(BattleshipWash.d13c,BattleshipWash.SAMP_HEIGHT-240.0,c=BattleshipWash.d44ca,cmap=viridis,s=25,edgecolor=[.2,.2,.2],vmin=cmin,vmax=cmax)
+        #cbar=fig.colorbar(d44ca,ax=AC,label='$\delta$44Ca', orientation='vertical',pad=.01,shrink=.25,ticks=[ round(a, 1) for a in np.linspace(cmin,cmax,7)])
+        #fig.savefig('CaData.pdf', format='pdf', dpi=300)
+        
+        Xplt = plt.subplot(gs[0,1])
+        Xplt2 = plt.subplot(gs[1,1])
+        Xplt.plot(mesh.printBox('rock','d13c')[1,:],mesh.printBox('rock','d44ca')[1,:],color=plt.rcParams['axes.color_cycle'][0])
+        Xplt.plot(ArrowCanyon.d13c,ArrowCanyon.d44ca,markeredgecolor='none',linestyle='none',marker='o',color=plt.rcParams['axes.color_cycle'][1])
+        Xplt2.plot(mesh.printBox('rock','d18o')[1,:],mesh.printBox('rock','d44ca')[1,:],color=plt.rcParams['axes.color_cycle'][0])
+        Xplt2.plot(ArrowCanyon.d18o,ArrowCanyon.d44ca,markeredgecolor='none',linestyle='none',marker='o',color=plt.rcParams['axes.color_cycle'][1])
+        
+        Xplt.set_xlabel('$\delta$13C')
+        Xplt.set_ylabel('$\delta$44Ca')
+        Xplt.set_xlim(-8,3.0)
+        Xplt2.set_xlabel('$\delta$18O')
+        Xplt2.set_xlim(-8,0.0)
+        Xplt2.set_ylabel('$\delta$44Ca')
+    
+fig = plt.figure(figsize=(12, 8))
+ani = animation.FuncAnimation(fig, aniStep, frames=100)
+FFwriter = animation.FFMpegWriter()
+ani.save('ArrowCanyon_fits.mp4', dpi=300, writer = FFwriter, fps=30, extra_args=['-vcodec', 'libx264'])    
+#fig.savefig('crossPlotsModelFit.pdf', format='pdf', dpi=300)

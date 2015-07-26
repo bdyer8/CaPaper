@@ -45,7 +45,9 @@ with plt.style.context('ggplot'):
     cbar=fig.colorbar(d44ca,ax=AC,label='$\delta$44Ca', orientation='vertical',pad=.05,shrink=.4,ticks=[ round(a, 1) for a in np.linspace(cmin,cmax,7)])
     d44ca=AC.scatter(BattleshipWash.d13c,BattleshipWash.SAMP_HEIGHT-240.0,c=BattleshipWash.d44ca,cmap=viridis,s=25,edgecolor=[.2,.2,.2],vmin=cmin,vmax=cmax)
     #cbar=fig.colorbar(d44ca,ax=AC,label='$\delta$44Ca', orientation='vertical',pad=.01,shrink=.25,ticks=[ round(a, 1) for a in np.linspace(cmin,cmax,7)])
-    fig.savefig('CaData.pdf', format='pdf', dpi=300)
+    #fig.savefig('CaData.pdf', format='pdf', dpi=300)
+    AC.scatter(mesh.printBox('rock','d13c')[1,:],range(104,0,-1),c=mesh.printBox('rock','d44ca')[1,:], cmap='Spectral',edgecolor='none',vmin=-1.4,vmax=-1.0)
+
     
 #%%
 with plt.style.context('ggplot'):

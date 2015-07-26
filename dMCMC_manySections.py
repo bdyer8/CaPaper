@@ -70,57 +70,12 @@ def synthData(a, b, m):
     a,b,c,d=bilinear_interpolation(a,b,points)
     return data.T.dot([a,b,c,d]).flatten()
             
-a2r=np.linspace(2.845,6.845,20) 
-t=np.linspace(0,311111,100) 
+a2r=np.linspace(2.5,8.0,20) 
+t=np.linspace(0,500000.0,100) 
 h=np.linspace(103,0,104)
 
-
-#load datasets and clean
-ArrowCanyon=pd.read_csv('samples_ArrowCanyon.csv')
-B503=pd.read_csv('samples_B503.csv')
-B211=pd.read_csv('samples_B211.csv')
-SanAndres=pd.read_csv('samples_SanAndres.csv')
-Leadville=pd.read_csv('samples_B416.csv')
-Leadville2=pd.read_csv('samples_B417.csv')
-BattleshipWash=pd.read_csv('samples_BattleshipWash.csv')
-B402=pd.read_csv('samples_B402.csv')
-
-#B402 (Strawberry Creek)
-B402meters=np.array(B402.SAMP_HEIGHT+6.0)
-B402d13c=np.array(B402.d13c-1.0)
-
-#B503 (CrazyWoman)
-B503meters=np.array(B503.SAMP_HEIGHT-27.0)
-B503d13c=np.array(B503.d13c)
-
-#B211 (Clark's Fork)
-B211meters=np.array(B211.SAMP_HEIGHT-124.0)
-B211d13c=np.array(B211.d13c)
-
-#leadville 1
-LVmeters=np.array(Leadville.SAMP_HEIGHT[Leadville.d13c<0]+9.0)
-LVd13c=np.array(Leadville.d13c[Leadville.d13c<0])
-
-#Leadville 2
-LV2meters=np.array(Leadville2.SAMP_HEIGHT+18)
-LV2d13c=np.array(Leadville2.d13c)
-
-#arrow canyon
-ACd13c=(ArrowCanyon.d13c[ArrowCanyon.SAMP_HEIGHT<103])
-BWd13c=(BattleshipWash.d13c[(((BattleshipWash.SAMP_HEIGHT-240)<103) & ((BattleshipWash.SAMP_HEIGHT-240)>0))])
-ACd13c=list(ACd13c)+list(BWd13c)
-ACmeters=(ArrowCanyon.SAMP_HEIGHT[ArrowCanyon.SAMP_HEIGHT<103])
-BWmeters=(BattleshipWash.SAMP_HEIGHT[(((BattleshipWash.SAMP_HEIGHT-240)<103) & ((BattleshipWash.SAMP_HEIGHT-240)>0))]-240.0)
-ACmeters=list(ACmeters)+list(BWmeters)
-
-#san andres
-SAmeters=np.array(SanAndres.SAMP_HEIGHT[SanAndres.SAMP_HEIGHT>240.1]-240.0)
-SAd13c=np.array(SanAndres.d13c[SanAndres.SAMP_HEIGHT>240.1])
-
-meters=LVmeters
-data=LVd13c
 sectionName='Synthetic2'
-modelSolutions=pickle.load(open('MeshSolutions_4ma.pkl','rb'))
+modelSolutions=pickle.load(open('MeshSolutions_2_5to8_0_500k.pkl','rb'))
 
 #generate perfect synthetic data
 AgeSynth=np.random.uniform(1e6,3e6)
@@ -170,11 +125,11 @@ allMeters=np.array([testmeters1,testmeters2,testmeters3,testmeters4,testmeters5]
 N=5
 err = pm.Uniform("err", 0, 500) #uncertainty on d13c values, flat prior
 
-A_to_R=pm.Uniform('A_to_R',2.845,6.845,size=N)
+A_to_R=pm.Uniform('A_to_R',2.5,8.0,size=N)
 Age=pm.Uniform('Age',.01e6,4e6)
 RR=pm.Uniform('RR',1e-8,1e-5) 
 #set pymc observations from data
-metersModel=pm.Normal("meters", 0, 10, value=allMeters, observed=True, size=(45,N))
+metersModel=pm.Normal("meters", 0, 100, value=allMeters, observed=True, size=(45,N))
 
 @pm.deterministic
 def velocity(A_to_R=A_to_R, RR=RR):              
@@ -223,8 +178,8 @@ def predd13c(A_to_R=A_to_R, model_iterations=model_iterations, metersModel=meter
                  (a2r[idxA_2[j]], t[idxT[j]], 0),
                  (a2r[idxA[j]], t[idxT_2[j]], 0),
                  (a2r[idxA_2[j]], t[idxT_2[j]], 0)]
-        if model_iterations[j]>311111.0:
-            data=data/data*2000.0
+        if model_iterations[j]>500000.0:
+            data=data/data*-7.0
         a,b,c,d=bilinear_interpolation(A_to_R[j],injections,points)
         results[j,:]=data.T.dot([a,b,c,d]).flatten()
     return results.T
@@ -236,7 +191,7 @@ obs = pm.Normal("obs", predd13c, err, value=allData, observed=True, size=(45,N))
 #set up pymc model with all variables, observations, and deterministics
 model = pm.Model([predd13c,err,obs,metersModel, A_to_R,velocity,RR,model_iterations,Age])
 
-mcmc=pm.MCMC(model,db='pickle', dbname=(sectionName+'diagenesis.pickle'))
+mcmc=pm.MCMC(model,db='pickle', dbname=('Synthetic_5_diagenesis.pickle'))
 
 #%%
 mcmc.sample(200000, 100000,5) #N, burn, thin

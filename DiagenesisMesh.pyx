@@ -30,12 +30,13 @@ cdef inline int int_max(int a, int b): return a if a >= b else b
 cdef inline int int_min(int a, int b): return a if a <= b else b
        
 class meshRock:
-    def __init__(self,meshX,meshY,u,v,d13c,d18o,d44ca,reactionRate,injectionSites):
+    def __init__(self,meshX,meshY,u,v,d13c,d18o,d44ca,reactionRate,injectionSites,boundary=[-8.0,-8.0,-1.0,0.0]):
         self.u=u
         self.v=v 
         self.shape=[meshY,meshX]
         self.initialBoundary=[d13c,d18o,d44ca]
         self.size=meshX*meshY
+        self.boundary=boundary
         x=linspace(0,meshX,meshX)
         y=linspace(0,meshY,meshY)
         self.X,self.Y=meshgrid(x,y)
@@ -199,9 +200,9 @@ class meshRock:
         cdef DTYPE_t j,n,row,column
         cdef np.ndarray[np.float64_t, ndim=2] newFluid, newRock, dRock, dFluid, onesShape
         delta=['d13c','d18o','d44ca','age'] #properties to track
-        boundary=[-7.0,-5.0,0.0] #BOUNDARY CONDITIONS
-        massRatio=[[240.0,2.0],[960.0,889.0],[800.0,70.0]] #stiochiometric ratio between elements (r,f) (Ca, 1-37)
-        alpha=[1.0,1.0,0.9995]
+        boundary=self.boundary #BOUNDARY CONDITIONS
+        massRatio=[[240.0,2.0],[960.0,889.0],[800.0,10.0]] #stiochiometric ratio between elements (r,f) (Ca, 1-37)
+        alpha=[1.0,1.0,1.0]
         nt = self.nt 
         nx=self.shape[1]
         ny=self.shape[0]
