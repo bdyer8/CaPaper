@@ -26,20 +26,49 @@ ArrowCanyon=pd.read_csv('samples_ArrowCanyon.csv')
 Leadville=pd.read_csv('samples_B416.csv')
 BattleshipWash=pd.read_csv('samples_BattleshipWash.csv')
 
-    
-meshY=10
+orgC=-25
+rockC=2
+injectC=-8.0
+rockFrac=(1-(injectC-rockC)/(orgC-rockC))
+carbonMass=2.0
+caMass=rockFrac*carbonMass/(.012)*.04 #kg
+
+
+meshY=3
 meshX=104
 v=np.ones([meshY,meshX])*0.0
-u=np.ones([meshY,meshX])*0.0029535400741844192  #solution from AC test with 2.5+-5ma
+u=np.ones([meshY,meshX])*0.0025535400741844192  #solution from AC test with 2.5+-5ma
 aveSpeed=np.sqrt(v.mean()**2+u.mean()**2)
 injectionSites=np.zeros([meshY,meshX])
 injectionSites=injectionSites>0
-injectionSites[:,0]=True  
-mesh=DiagenesisMesh.meshRock(meshX,meshY,u,v,2,2,-1,3.5703864479316496e-07,injectionSites,[-8.0,-10.0,-1.5,0.0]) #reaction rate from same sim
-#mesh.inject(int(1.1e6/mesh.dt))
+injectionSites[15:35,15:35]=True  
+
+caMass=np.linspace(1.0,70.0,5)
+alpha=np.linspace(.9985,1.1,5)
+carbonSolutions=np.zeros((30,30,104))
+calciumSolutions=np.zeros((5,5,104))
+carbonSolutions2=np.zeros((5,5,104))
+calciumSolutions2=np.zeros((5,5,104))
+mesh=DiagenesisMesh.meshRock(meshX,meshY,u,v,2,2,-1.05,3.5703864479316496e-07,injectionSites,[injectC,-10.0,-1.5,0.0],[1.0,1.0,1.0],[[240.0,carbonMass],[960.0,889.0],[800.0,4.2848305187685645]]) #reaction rate from same sim
+mesh.inject(int(3.5e6/mesh.dt))       
 
 #%%
-mesh.inject(int(2.5e6/mesh.dt))
+for i in range(5):
+    for j in range(5):
+        print(str(i)+','+str(j))
+        mesh=DiagenesisMesh.meshRock(meshX,meshY,u,v,2,2,-1.04,3.5703864479316496e-07,injectionSites,[injectC,-10.0,-1.0,0.0],[1.0,1.0,alpha[j]],[[240.0,carbonMass],[960.0,889.0],[800.0,caMass[i]]]) #reaction rate from same sim
+        mesh.inject(int(2.5e6/mesh.dt))
+        carbonSolutions[i,j,:]=mesh.printBox('rock','d13c')[1,:]
+        calciumSolutions[i,j,:]=mesh.printBox('rock','d44ca')[1,:]
+        mesh.inject(int(2.0e6/mesh.dt))
+        carbonSolutions2[i,j,:]=mesh.printBox('rock','d13c')[1,:]
+        calciumSolutions2[i,j,:]=mesh.printBox('rock','d44ca')[1,:]
+
+
+#mesh.inject(int(2.5e6/mesh.dt))
+
+#%%
+mesh.inject(int(4.5e6/mesh.dt))
 
 #%%
 
@@ -104,3 +133,38 @@ with plt.style.context('fivethirtyeight'):
     
 
 #fig.savefig('crossPlotsModelFit.pdf', format='pdf', dpi=300)
+
+
+#%%
+
+LV1meters=np.array(Leadville.SAMP_HEIGHT[Leadville.d13c<0]+9.0)
+LV1d13c=Leadville.d13c[Leadville.d13c<0]
+LV1d44ca=Leadville.d44ca[(Leadville.d13c<0) & (Leadville.SAMP_HEIGHT>20)]
+LV1d13c=Leadville.d13c[LV1d44ca.index]
+LV1meters=Leadville.SAMP_HEIGHT[LV1d13c.index]
+LV1d44cameters=Leadville.SAMP_HEIGHT[Leadville.d44ca[Leadville.d13c<0].index]+9
+
+with plt.style.context('ggplot'):
+    rcParams.update({'figure.autolayout': True})
+    fig = plt.figure(figsize=(6, 8))
+    gs = gridspec.GridSpec(1, 1) 
+    AC = plt.subplot(gs[:,:])
+    #BW = plt.subplot(gs[:,3:])
+    AC.scatter(Leadville.d13c,Leadville.SAMP_HEIGHT,s=10,color=[.7,.7,.7],edgecolor='none')
+    AC.set_xlabel('$\delta$13C')
+    AC.set_ylabel('height(m)')
+    AC.set_ylim([0,120])
+    AC.set_xlim([-10,6])
+    cmin=LV1d44ca.min()
+    cmax=LV1d44ca.max()
+    d44ca=AC.scatter(LV1d13c,LV1meters,c=LV1d44ca,cmap='Spectral',vmin=cmin,vmax=cmax,s=25,edgecolor=[.2,.2,.2])
+    cbar=fig.colorbar(d44ca,ax=AC,label='$\delta$44Ca', orientation='vertical',pad=.05,shrink=.4,ticks=[ round(a, 1) for a in np.linspace(cmin,cmax,7)])
+    #cbar=fig.colorbar(d44ca,ax=AC,label='$\delta$44Ca', orientation='vertical',pad=.01,shrink=.25,ticks=[ round(a, 1) for a in np.linspace(cmin,cmax,7)])
+    specCM=plt.get_cmap('Spectral') 
+    minCa=cmin
+    rangeCa=np.abs(cmin-cmax)
+    for i in range(meshX-1):
+        avCa=np.mean(mesh.printBox('rock','d44ca')[1,i:i+2])
+        AC.plot(mesh.printBox('rock','d13c')[1,i:i+2],np.linspace(meshX-(i-1),meshX-i,2),color=specCM(np.abs(minCa-avCa)/rangeCa))
+       
+    fig.savefig('LVCaData.pdf', format='pdf', dpi=600)

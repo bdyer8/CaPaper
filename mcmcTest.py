@@ -18,26 +18,26 @@ from pymc.Matplot import plot
 import pydot
 #%%
 err=pm.Uniform('err',0,500)
-m=pm.Uniform('slope',-100,100,size=2)
+m=pm.Uniform('slope',-100,100,size=(1000,2),value=np.random.normal(0,1,(1000,2)), observed=True)
 b=pm.Uniform('offset',-100,100,size=2)
-xData=np.random.uniform(0,1.0,(100,2))
+xData=np.random.uniform(0,1.0,(1000,2))
 mR=[3.23,6.75]
 bR=[-23.4,12.2]
-yData=mR*xData+bR+np.random.normal(0,3,(100,2))
+yData=mR*xData+bR+np.random.normal(0,3,(1000,2))
 
-x=pm.Normal('x',0,1,value=xData,observed=True, size=(100,2))
+x=pm.Normal('x',0,1,value=xData,observed=True, size=(1000,2))
 
 @pm.deterministic()
 def predY(m=m,b=b,x=x):
     return m*x+b
     
-y=pm.Normal('y',predY,err,value=yData,observed=True, size=(100,2))
+y=pm.Normal('y',predY,err,value=yData,observed=True, size=(1000,2))
 
 model=pm.Model([m,b,x,predY,y])
 
-mcmc=pm.MCMC(model2)
+mcmc=pm.MCMC(model)
 #%%
-mcmc.sample(100000,0,2)
+mcmc.sample(10000,0,2)
 
 #%%
 for i in range(2):

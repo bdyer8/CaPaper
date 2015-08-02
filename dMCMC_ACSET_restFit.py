@@ -464,7 +464,7 @@ with plt.style.context('fivethirtyeight'):
 
 
 #    
-fig.savefig(('6SectionsData_tset_ACSET.pdf'), format='pdf', dpi=300)  
+#fig.savefig(('6SectionsData_tset_ACSET.pdf'), format='pdf', dpi=300)  
 #
 #
 #
@@ -472,7 +472,7 @@ fig.savefig(('6SectionsData_tset_ACSET.pdf'), format='pdf', dpi=300)
 #
 #mcmc.db.close()
 
-#db = pymc.database.pickle.load('Disaster.pickle')
+#db = pymc.database.pickle.load('6Sections_Diagenesis_ACFIT.pickle')
 
 #%%
 #orange=#cb4b16

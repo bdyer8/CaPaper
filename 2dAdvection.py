@@ -3,8 +3,8 @@ from matplotlib import cm
 import matplotlib.pyplot as plt
 import numpy as np
 
-nx = 200
-ny = 35
+nx = 50
+ny = 50
 nt = 1000
 nit=50
 c = 1
@@ -76,21 +76,25 @@ def cavityFlow(nt, u, v, dt, dx, dy, p, rho, nu):
                         nu*(dt/dx**2*(vn[1:-1,2:]-2*vn[1:-1,1:-1]+vn[1:-1,0:-2])+\
                         (dt/dy**2*(vn[2:,1:-1]-2*vn[1:-1,1:-1]+vn[0:-2,1:-1])))
 
-        for i in range(0,35):
-            u[-i,0] = 0.5*i
-        #u[0,:] = 0
-        for i in range(0,101):
-            u[:int((28.0/100)*i),i]=0
-            v[:int((28.0/100)*i),i]=0
-            u[:int((28.0/100)*i),-i]=0
-            v[:int((28.0/100)*i),-i]=0
-        u[0,0]=3.5
-        u[0:,-1] = u[0:,-2]
-        #u[0,1:] = 0    #set velocity on cavity lid equal to 1
+#        for i in range(0,35):
+#            u[-i,0] = 0.5*i
+#        #u[0,:] = 0
+#        for i in range(0,101):
+#            u[:int((28.0/100)*i),i]=0
+#            v[:int((28.0/100)*i),i]=0
+#            u[:int((28.0/100)*i),-i]=0
+#            v[:int((28.0/100)*i),-i]=0
+        u[0,0]=0
+        u[:,0]=0
+        u[:,-1] = 0
+        u[0,:] = 1   #set velocity on cavity lid equal to 1
         v[0,:] = 0
         v[-1,:]= 0
         v[:,0] = 0
         v[:,-2:] = 0
+        
+        v[20:30,20:30]=0
+        u[20:30,20:30]=0
         
         
     return u, v, p

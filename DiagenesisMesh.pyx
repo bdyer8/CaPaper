@@ -17,7 +17,7 @@ from pylab import rcParams
 from matplotlib import gridspec
 from matplotlib.colors import LinearSegmentedColormap
 import pickle
-import copy
+from copy import deepcopy
 from matplotlib import rcParams
 import pandas as pd
 cimport cython
@@ -30,7 +30,7 @@ cdef inline int int_max(int a, int b): return a if a >= b else b
 cdef inline int int_min(int a, int b): return a if a <= b else b
        
 class meshRock:
-    def __init__(self,meshX,meshY,u,v,d13c,d18o,d44ca,reactionRate,injectionSites,boundary=[-8.0,-8.0,-1.0,0.0]):
+    def __init__(self,meshX,meshY,u,v,d13c,d18o,d44ca,reactionRate,injectionSites,boundary=[-8.0,-8.0,-1.0,0.0],alpha=[1.0,1.0,1.0],massRatios=[[329.0,2.0],[1315.0,889.0],[1096.0,10.0]]):
         self.u=u
         self.v=v 
         self.shape=[meshY,meshX]
@@ -41,7 +41,9 @@ class meshRock:
         y=linspace(0,meshY,meshY)
         self.X,self.Y=meshgrid(x,y)
         self.rock=[[rock(d13c,d18o,d44ca) for j in range(meshX)] for i in range(meshY)]
-        self.fluid=[[fluid(d13c,d18o,d44ca-(0.9995-1)*10**3,u[i,j],v[i,j]) for j in range(meshX)] for i in range(meshY)]
+        self.fluid=[[fluid(d13c,d18o,d44ca-(alpha[-1]-1)*10**3,u[i,j],v[i,j]) for j in range(meshX)] for i in range(meshY)]
+        self.rockInit=deepcopy(self.rock)
+        self.fluidInit=deepcopy(self.fluid)
         self.positiveX=np.array(self.u)>0
         self.positiveY=np.array(self.v)<0
         self.negativeX=np.array(self.u)<0
@@ -57,6 +59,11 @@ class meshRock:
         self.JsN=np.ones((meshY,meshX))
         self.IsN=np.ones((meshY,meshX))
         self.injectionSites=injectionSites
+        self.alpha=alpha
+        self.massRatio=massRatios
+        self.d13c=d13c
+        self.d18o=d18o
+        self.d44ca=d44ca
         ySign,xSign=np.ones([2,self.shape[0],self.shape[1]])
         
         for i in range(self.shape[0]):
@@ -76,7 +83,7 @@ class meshRock:
         if courant>1.0:
             print(courant)
             print('Warning: advecting faster than timestep can resolve, decrease timestep (dt)')
-        if ((self.dt*self.r)*240.0)>1.0:
+        if ((self.dt*self.r)*massRatios[0][0])>massRatios[0][1]:
             print('Warning: reacting faster than timestep can resolve, decrease timestep (dt)')
     
         
@@ -88,7 +95,15 @@ class meshRock:
         fig = plt.figure(figsize=(15, 12))
         self.compPlotAni(fig)
         plt.show()
-    
+        
+    def hardReset(self):
+        self.injectionAge=0.0
+        for i in range(self.shape[0]):
+            for j in range(self.shape[1]):
+                self.rock[i][j].reset()
+                self.fluid[i][j].reset(self.alpha,self.initialBoundary[-1])
+            
+        
     def compPlotAni(self,fig):
         gs = gridspec.GridSpec(5, 3) 
         d13cRockPlot = plt.subplot(gs[0,:])
@@ -201,8 +216,8 @@ class meshRock:
         cdef np.ndarray[np.float64_t, ndim=2] newFluid, newRock, dRock, dFluid, onesShape
         delta=['d13c','d18o','d44ca','age'] #properties to track
         boundary=self.boundary #BOUNDARY CONDITIONS
-        massRatio=[[240.0,2.0],[960.0,889.0],[800.0,10.0]] #stiochiometric ratio between elements (r,f) (Ca, 1-37)
-        alpha=[1.0,1.0,1.0]
+        massRatio=self.massRatio #stiochiometric ratio between elements (r,f) (Ca, 1-37)
+        alpha=self.alpha
         nt = self.nt 
         nx=self.shape[1]
         ny=self.shape[0]
@@ -296,15 +311,32 @@ class rock:
         self.d18o = d18o
         self.d44ca = d44ca
         self.fluxed = 0.0
-
+        self.d13cI = d13c
+        self.d18oI = d18o
+        self.d44caI = d44ca
+        
+    def reset(self):
+        self.d13c = self.d13cI
+        self.d18o = self.d18oI
+        self.d44ca = self.d44caI
+        self.fluxed = 0.0
         
 class fluid:
     def __init__(self, d13c, d18o, d44ca, u, v):
         self.d13c = d13c
         self.d18o = d18o
         self.d44ca = d44ca
-        self.age = 0
+        self.d13cI = d13c
+        self.d18oI = d18o
+        self.d44caI = d44ca
+        self.age = 0.0
         self.u = u
         self.v = v
-        self.flux=(np.abs(u)+np.abs(v))        
+        self.flux=(np.abs(u)+np.abs(v))  
+    
+    def reset(self,alpha,CaInit):
+        self.d13c = self.d13cI
+        self.d18o = self.d18oI
+        self.d44ca = CaInit-(alpha[-1]-1)*10**3
+        self.age = 0.0
 

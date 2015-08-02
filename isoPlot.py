@@ -73,3 +73,31 @@ with plt.style.context('ggplot'):
     fig.savefig('OData.pdf', format='pdf', dpi=600)
     
     
+    
+    #%%
+    
+LV1meters=np.array(Leadville.SAMP_HEIGHT[Leadville.d13c<0]+9.0)
+LV1d13c=Leadville.d13c[Leadville.d13c<0]
+LV1d44ca=Leadville.d44ca[(Leadville.d13c<0) & (Leadville.SAMP_HEIGHT>20)]
+LV1d13c=Leadville.d13c[LV1d44ca.index]
+LV1meters=Leadville.SAMP_HEIGHT[LV1d13c.index]
+LV1d44cameters=Leadville.SAMP_HEIGHT[Leadville.d44ca[Leadville.d13c<0].index]+9
+
+with plt.style.context('ggplot'):
+    rcParams.update({'figure.autolayout': True})
+    fig = plt.figure(figsize=(6, 8))
+    gs = gridspec.GridSpec(1, 1) 
+    AC = plt.subplot(gs[:,:])
+    #BW = plt.subplot(gs[:,3:])
+    AC.scatter(Leadville.d13c,Leadville.SAMP_HEIGHT,s=10,color=[.7,.7,.7],edgecolor='none')
+    AC.set_xlabel('$\delta$13C')
+    AC.set_ylabel('height(m)')
+    AC.set_ylim([0,120])
+    AC.set_xlim([-10,6])
+    cmin=LV1d44ca.min()
+    cmax=LV1d44ca.max()
+    d44ca=AC.scatter(LV1d13c,LV1meters,c=LV1d44ca,cmap='Spectral',vmin=cmin,vmax=cmax,s=25,edgecolor=[.2,.2,.2])
+    cbar=fig.colorbar(d44ca,ax=AC,label='$\delta$44Ca', orientation='vertical',pad=.05,shrink=.4,ticks=[ round(a, 1) for a in np.linspace(cmin,cmax,7)])
+    #cbar=fig.colorbar(d44ca,ax=AC,label='$\delta$44Ca', orientation='vertical',pad=.01,shrink=.25,ticks=[ round(a, 1) for a in np.linspace(cmin,cmax,7)])
+    fig.savefig('LVCaData.pdf', format='pdf', dpi=600)
+    
