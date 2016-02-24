@@ -53,6 +53,7 @@ class meshRock:
         self.maxF=np.max(self.flux)
         self.r=reactionRate
         self.injectionAge=0.0
+        self.trueAge=0.0
         self.xSize=1.0 #m to box
         self.Js=np.ones((meshY,meshX))
         self.Is=np.ones((meshY,meshX))
@@ -98,6 +99,7 @@ class meshRock:
         
     def hardReset(self):
         self.injectionAge=0.0
+        self.trueAge=0.0
         for i in range(self.shape[0]):
             for j in range(self.shape[1]):
                 self.rock[i][j].reset()
@@ -113,7 +115,7 @@ class meshRock:
         crossPlotCOAge = plt.subplot(gs[4,0])
         crossPlotCOSpeed = plt.subplot(gs[4,1])
         ageC = plt.subplot(gs[4,2])
-        text=d13cRockPlot.text(.0,.0,(str(int(self.injectionAge*self.dt))+' Years'),family='sans-serif')
+        text=d13cRockPlot.text(.0,.0,(str(int(self.trueAge))+' Years'),family='sans-serif')
         carbonAxes=[-6,6,-5,5]
         oxygenAxes=[-6,6,-5,5] #second set is for cmaps
         calciumAxes=[-1.6,-.8,-2,-1]
@@ -257,6 +259,7 @@ class meshRock:
                 return cX
             
             self.injectionAge=self.injectionAge+1
+            self.trueAge=self.trueAge+self.dt
 
 
             cX=AdvectionStep(delta,boundary) 
